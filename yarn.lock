@@ -15489,7 +15489,7 @@ __metadata:
     "@testing-library/react": "npm:^14.0.0"
     "@testing-library/user-event": "npm:^14.0.0"
     "@types/react-dom": "npm:*"
-    backstage-plugin-glean: "npm:^0.1.0"
+    backstage-plugin-glean: "workspace:^"
     cross-env: "npm:^7.0.0"
     react: "npm:^18.0.2"
     react-dom: "npm:^18.0.2"
@@ -16148,7 +16148,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"backstage-plugin-glean@npm:^0.1.0, backstage-plugin-glean@workspace:plugins/glean":
+"backstage-plugin-glean@workspace:^, backstage-plugin-glean@workspace:plugins/glean":
   version: 0.0.0-use.local
   resolution: "backstage-plugin-glean@workspace:plugins/glean"
   dependencies:
