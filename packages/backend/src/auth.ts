@@ -3,11 +3,52 @@ import { gcpIapAuthenticator } from '@backstage/plugin-auth-backend-module-gcp-i
 import {
   authProvidersExtensionPoint,
   createProxyAuthProviderFactory,
+  SignInResolver,
 } from '@backstage/plugin-auth-node';
 import {
   stringifyEntityRef,
   DEFAULT_NAMESPACE,
 } from '@backstage/catalog-model';
+import { GcpIapResult } from '@backstage/plugin-auth-backend-module-gcp-iap-provider';
+
+const ALLOWED_DOMAIN = /^(firefox\.gcp\.)?mozilla\.com$/;
+
+export const gcpIapSignInResolver: SignInResolver<GcpIapResult> = async (
+  info,
+  ctx,
+) => {
+  const {
+    profile: { email },
+  } = info;
+
+  if (!email) {
+    throw new Error('User profile contained no email');
+  }
+
+  const [name, domain] = email.split('@');
+  if (!domain || !ALLOWED_DOMAIN.test(domain)) {
+    throw new Error(
+      `Login failed, this email ${email} does not belong to the expected domain`,
+    );
+  }
+
+  try {
+    return await ctx.signInWithCatalogUser({ entityRef: { name } });
+  } catch (_) {
+    const userEntity = stringifyEntityRef({
+      kind: 'User',
+      name,
+      namespace: DEFAULT_NAMESPACE,
+    });
+
+    return ctx.issueToken({
+      claims: {
+        sub: userEntity,
+        ent: [userEntity],
+      },
+    });
+  }
+};
 
 export const gcpIapCustomAuthProvider = createBackendModule({
   pluginId: 'auth',
@@ -20,41 +61,7 @@ export const gcpIapCustomAuthProvider = createBackendModule({
           providerId: 'gcpIap',
           factory: createProxyAuthProviderFactory({
             authenticator: gcpIapAuthenticator,
-            async signInResolver(info, ctx) {
-              const {
-                profile: { email },
-              } = info;
-
-              if (!email) {
-                throw new Error('User profile contained no email');
-              }
-
-              const [name, domain] = email.split('@');
-              if (!domain.match(/^(firefox\.gcp\.)?mozilla\.com$/)) {
-                throw new Error(
-                  `Login failed, this email ${email} does not belong to the expected domain`,
-                );
-              }
-
-              // try to resolve an existing gh username to the name part of the email
-              // otherwise, issue a log in token.
-              try {
-                return await ctx.signInWithCatalogUser({ entityRef: { name } });
-              } catch (_) {
-                const userEntity = stringifyEntityRef({
-                  kind: 'User',
-                  name,
-                  namespace: DEFAULT_NAMESPACE,
-                });
-
-                return ctx.issueToken({
-                  claims: {
-                    sub: userEntity,
-                    ent: [userEntity],
-                  },
-                });
-              }
-            },
+            signInResolver: gcpIapSignInResolver,
           }),
         });
       },
