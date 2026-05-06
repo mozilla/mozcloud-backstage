@@ -10,9 +10,10 @@ import {
 
 import Glean from '@mozilla/glean/web';
 import GleanMetrics from '@mozilla/glean/metrics';
-import { ConfigurationInterface as GleanConfig } from '@mozilla/glean/dist/types/core/config';
 import { JsonObject } from '@backstage/types';
 import { create } from './metrics/backstage';
+
+type GleanConfig = NonNullable<Parameters<typeof Glean.initialize>[2]>;
 
 interface DebugConfig extends JsonObject {
   logging?: boolean;
