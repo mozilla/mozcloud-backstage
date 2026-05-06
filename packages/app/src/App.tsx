@@ -31,44 +31,16 @@ import {
   ProxiedSignInPage,
   SignInPage,
 } from '@backstage/core-components';
-import { createApp } from '@backstage/app-defaults';
+import { createApp } from '@backstage/frontend-defaults';
+import {
+  convertLegacyApp,
+  convertLegacyAppOptions,
+} from '@backstage/core-compat-api';
 import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
 import { CatalogGraphPage } from '@backstage/plugin-catalog-graph';
 import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { configApiRef, useApi } from '@backstage/core-plugin-api';
-
-// import { TechRadarPage } from '@backstage-community/plugin-tech-radar';
-
-const app = createApp({
-  apis,
-  bindRoutes({ bind }) {
-    bind(catalogPlugin.externalRoutes, {
-      createComponent: scaffolderPlugin.routes.root,
-      viewTechDoc: techdocsPlugin.routes.docRoot,
-      createFromTemplate: scaffolderPlugin.routes.selectedTemplate,
-    });
-    bind(apiDocsPlugin.externalRoutes, {
-      registerApi: catalogImportPlugin.routes.importPage,
-    });
-    bind(scaffolderPlugin.externalRoutes, {
-      registerComponent: catalogImportPlugin.routes.importPage,
-      viewTechDoc: techdocsPlugin.routes.docRoot,
-    });
-    bind(orgPlugin.externalRoutes, {
-      catalogIndex: catalogPlugin.routes.catalogIndex,
-    });
-  },
-  components: {
-    SignInPage: props => {
-      const configApi = useApi(configApiRef);
-      if (configApi.getOptionalString('auth.environment') === 'development') {
-        return <SignInPage {...props} providers={['guest']} />;
-      }
-      return <ProxiedSignInPage {...props} provider="gcpIap" />;
-    },
-  },
-});
 
 const routes = (
   <FlatRoutes>
@@ -107,12 +79,51 @@ const routes = (
   </FlatRoutes>
 );
 
-export default app.createRoot(
+const rootElement = (
   <>
     <AlertDisplay />
     <OAuthRequestDialog />
     <AppRouter>
       <Root>{routes}</Root>
     </AppRouter>
-  </>,
+  </>
 );
+
+const app = createApp({
+  features: [
+    convertLegacyAppOptions({
+      apis,
+      components: {
+        SignInPage: props => {
+          const configApi = useApi(configApiRef);
+          if (
+            configApi.getOptionalString('auth.environment') === 'development'
+          ) {
+            return <SignInPage {...props} providers={['guest']} />;
+          }
+          return <ProxiedSignInPage {...props} provider="gcpIap" />;
+        },
+      },
+    }),
+    ...convertLegacyApp(rootElement),
+  ],
+  bindRoutes({ bind }) {
+    bind(catalogPlugin.externalRoutes, {
+      createComponent: scaffolderPlugin.routes.root,
+      viewTechDoc: techdocsPlugin.routes.docRoot,
+      createFromTemplate: scaffolderPlugin.routes.selectedTemplate,
+    });
+    bind(apiDocsPlugin.externalRoutes, {
+      registerApi: catalogImportPlugin.routes.importPage,
+    });
+    bind(scaffolderPlugin.externalRoutes, {
+      registerComponent: catalogImportPlugin.routes.importPage,
+      viewTechDoc: techdocsPlugin.routes.docRoot,
+    });
+    bind(orgPlugin.externalRoutes, {
+      catalogIndex: catalogPlugin.routes.catalogIndex,
+    });
+  },
+});
+
+export default app.createRoot();
