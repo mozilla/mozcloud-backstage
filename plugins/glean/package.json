@@ -27,6 +27,7 @@
   "dependencies": {
     "@backstage/core-components": "^0.15.1",
     "@backstage/core-plugin-api": "^1.10.0",
+    "@backstage/types": "^1.2.1",
     "@mozilla/glean": "^5.0.3",
     "react-router-dom": "^6.27.0",
     "react-use": "^17.2.4"

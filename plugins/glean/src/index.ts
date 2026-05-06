@@ -28,8 +28,9 @@ export class GleanAnalytics implements AnalyticsApi {
   ) {
     if (debug) {
       Glean.setLogPings(!!debug.logging);
-      // set the debug tag if it is defined
-      debug.tag && Glean.setDebugViewTag(debug.tag);
+      if (debug.tag) {
+        Glean.setDebugViewTag(debug.tag);
+      }
     }
     Glean.initialize(appId, enabled, gleanConfig);
   }

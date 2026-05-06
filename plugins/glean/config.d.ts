@@ -20,7 +20,7 @@ export interface Config {
            *
            * @visibility frontend
            */
-          logging?: boolean,
+          logging?: boolean;
 
           /**
            * Set a debug tag for use in the Glean Debug Viewer.
@@ -28,8 +28,8 @@ export interface Config {
            *
            * @visibility frontend
            */
-          tag?: string,
-        }
+          tag?: string;
+        };
 
         /**
          * Whether to enable Glean Analytics.
@@ -45,7 +45,6 @@ export interface Config {
          * @visibility frontend
          */
         environment: 'development' | 'production';
-
       };
     };
   };
