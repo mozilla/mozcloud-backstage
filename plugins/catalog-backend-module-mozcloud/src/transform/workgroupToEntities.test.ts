@@ -144,9 +144,7 @@ describe('workgroupToEntities', () => {
       // by group:workgroups/fxa must surface for users in any subgroup.
       expect(parentMembers).toContain(userRef('wclouser@mozilla.com')); // admins
       expect(parentMembers).toContain(userRef('atoufali@mozilla.com')); // developers
-      expect(parentMembers).toContain(
-        userRef('akomarzewski@mozilla.com'),
-      ); // viewers
+      expect(parentMembers).toContain(userRef('akomarzewski@mozilla.com')); // viewers
     });
   });
 });

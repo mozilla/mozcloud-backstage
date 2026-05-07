@@ -15,6 +15,10 @@ app:
           path: /
     - api:home/visits: true
     - app-root-element:home/visit-listener: true
+    # The catalog-graph plugin's Overview card takes up too much space.
+    # Disable it on Overview — the same graph is reachable via the
+    # custom Diagram tab (entity-content:catalog/diagram).
+    - entity-card:catalog-graph/relations: false
 
 organization:
   name: Mozilla

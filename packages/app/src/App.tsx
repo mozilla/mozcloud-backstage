@@ -27,6 +27,7 @@ import {
   oauthRequestDialogElement,
 } from './extensions/rootElements';
 import { homePageLayout } from './extensions/homePage';
+import { catalogEntityPageModule } from './extensions/entityPage';
 
 const appModule = createFrontendModule({
   pluginId: 'app',
@@ -48,6 +49,7 @@ const homeModule = createFrontendModule({
 const features: FrontendFeature[] = [
   appModule,
   homeModule,
+  catalogEntityPageModule,
   catalogPlugin,
   catalogGraphPlugin,
   catalogImportPlugin,
