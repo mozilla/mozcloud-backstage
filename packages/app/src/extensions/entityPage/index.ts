@@ -1,5 +1,7 @@
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import {
+  chartCard,
+  deploymentCard,
   diagramContent,
   gcpProjectCard,
   mozillaMetadataCard,
@@ -17,5 +19,11 @@ import {
  */
 export const catalogEntityPageModule = createFrontendModule({
   pluginId: 'catalog',
-  extensions: [mozillaMetadataCard, gcpProjectCard, diagramContent],
+  extensions: [
+    mozillaMetadataCard,
+    gcpProjectCard,
+    chartCard,
+    deploymentCard,
+    diagramContent,
+  ],
 });

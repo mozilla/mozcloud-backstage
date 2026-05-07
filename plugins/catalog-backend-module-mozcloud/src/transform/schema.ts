@@ -1,10 +1,22 @@
 import { z } from 'zod';
 
+const ImageSchema = z
+  .object({
+    image_repository: z.string().optional(),
+    image_name: z.string().optional(),
+    image_tag: z.string().optional(),
+    image_regex: z.string().optional(),
+    update_strategy: z.string().optional(),
+    auto_update: z.boolean().optional(),
+  })
+  .passthrough();
+
 const ChartSchema = z
   .object({
     application_repository: z.string().optional(),
     target_revision: z.string().optional(),
     release_name: z.string().optional(),
+    images: z.record(z.string(), ImageSchema).optional(),
   })
   .passthrough();
 
@@ -46,6 +58,7 @@ const GlobalsSchema = z
     risk_uuid: z.string().optional(),
     cluster_type: z.string().optional(),
     slack_channel: z.string().optional(),
+    additional_regions: z.array(z.string()).optional(),
     workgroups: z.array(z.string()).default([]),
     deployment: DeploymentSchema.optional(),
     entitlements: z

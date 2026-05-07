@@ -26,7 +26,7 @@ import {
  */
 export const DiagramContent = () => (
   <EntityCatalogGraphCard
-    direction={Direction.TOP_BOTTOM}
+    direction={Direction.LEFT_RIGHT}
     title="Diagram"
     height={700}
     relations={[
