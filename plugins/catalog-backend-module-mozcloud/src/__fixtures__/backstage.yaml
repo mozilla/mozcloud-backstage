@@ -1,0 +1,53 @@
+globals:
+  version: v1alpha1
+  app_code: backstage
+  function: webservices
+  risk_level: high
+  deployment:
+    charts:
+      backstage:
+        application_repository: mozilla-services/moz-backstage-app
+        images:
+          moz-backstage-app:
+            auto_update: true
+    gha_deploy_account: false
+    slack_channel: infra-cloud-eng-bots
+    type: argocd
+
+  application_ports:
+    - 8000
+    - 8080
+
+  extra_attributes: {}
+  workgroups:
+    - backstage
+
+realms:
+  nonprod:
+    project_id: moz-fx-backstage-nonprod
+    environments:
+      - name: stage
+
+    extra_attributes:
+      stage: '{"provision_ipv6": true}'
+
+    deployment:
+      charts:
+        backstage:
+          images:
+            moz-backstage-app:
+              image_regex: ^v\d+\.\d+\.\d+-\d+-\w{8}$
+  prod:
+    project_id: moz-fx-backstage-prod
+    environments:
+      - name: prod
+
+    extra_attributes:
+      prod: '{"provision_ipv6": true}'
+
+    deployment:
+      charts:
+        backstage:
+          images:
+            moz-backstage-app:
+              image_regex: ^v\d+\.\d+\.\d+$

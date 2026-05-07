@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Mozilla+Text:wght@200..700&display=swap');
+
+/*
+ * Backstage UI (BUI) CSS variable overrides.
+ *
+ * The new BUI components (MembersListCard, avatars, search results, new
+ * Buttons) don't read from the MUI palette in `themes.ts` — they're
+ * styled via CSS custom properties. The defaults in
+ * `@backstage/ui/css/styles.css` (imported first in `index.tsx`) give
+ * very low surface contrast in dark mode, which is what makes cards
+ * look like they're bleeding into the page background.
+ *
+ * Override the most impactful BUI tokens here so the lift between the
+ * page canvas and elevated surfaces matches what MUI uses in `themes.ts`.
+ * Following the pattern in https://backstage.io/docs/conf/user-interface/:
+ * use `:root` for cross-mode rules and `[data-theme-mode='dark']` /
+ * `[data-theme-mode='light']` for mode-specific overrides.
+ */
+
+[data-theme-mode='dark'] {
+  --bui-bg-app: #1f2127;
+  --bui-bg-neutral-1: #2a2d33;
+  --bui-bg-neutral-2: #34373d;
+  --bui-bg-neutral-3: #3e4147;
+  --bui-bg-neutral-4: #484b51;
+  --bui-border-1: #34373d;
+  --bui-border-2: #484b51;
+}

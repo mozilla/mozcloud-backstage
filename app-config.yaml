@@ -15,10 +15,95 @@ app:
     - page:home:
         config:
           path: /
+
     # The home plugin ships these as opt-in (disabled: true). Enable both
     # so HomePageRecentlyVisited / HomePageTopVisited have an API to query.
     - api:home/visits: true
     - app-root-element:home/visit-listener: true
+    - entity-content:catalog/diagram: false
+
+    # Default the Group "Members" card to aggregated view so subgroup
+    # members appear without having to toggle. The toggle remains
+    # available for switching back to direct-only.
+    - entity-card:org/members-list:
+        config:
+          initialRelationAggregation: aggregated
+
+    # Hide stock catalog relation cards (Depends on..., Has...) when the
+    # entity has no relations of that type. Defaults only gate on `kind`,
+    # so they render empty "No X" tables for every entity. `$contains`
+    # over `relations` keeps the extension from instantiating unless the
+    # entity has at least one matching relation.
+    - entity-card:catalog/about:
+        config:
+          type: info
+          filter:
+            $not: { kind: { $in: [Group, User] } }
+    - entity-card:org/ownership:
+        config:
+          type: content
+          initialRelationAggregation: aggregated
+          filter: { kind: { $in: [Group, User] } }
+    - entity-card:api-docs/provided-apis:
+        config:
+          filter: { spec.providesApis: { $exists: true } }
+    - entity-card:api-docs/consumed-apis:
+        config:
+          filter: { spec.consumesApis: { $exists: true } }
+    - entity-card:catalog/depends-on-components:
+        config:
+          filter: { spec.dependsOn: { $exists: true } }
+    - entity-card:catalog/depends-on-resources:
+        config:
+          filter: { spec.dependsOn: { $exists: true } }
+    # `has-*` cards need to filter on the derived `relations` array, not
+    # `spec.hasPart`. The parent rarely has `spec.hasPart` set — children
+    # declare `spec.subcomponentOf` / `spec.system` / `spec.domain` and
+    # the catalog processor derives the inverse `hasPart` relation on
+    # the parent. The `spec.*` predicate misses that.
+    - entity-card:catalog/has-components:
+        config:
+          filter:
+            kind: system
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'component:' }
+    - entity-card:catalog/has-resources:
+        config:
+          filter:
+            kind: system
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'resource:' }
+    - entity-card:catalog/has-subcomponents:
+        config:
+          filter:
+            kind: component
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'component:' }
+    - entity-card:catalog/has-subdomains:
+        config:
+          filter:
+            kind: domain
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'domain:' }
+    - entity-card:catalog/has-systems:
+        config:
+          filter:
+            kind: domain
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'system:' }
+    - entity-card:catalog-graph/relations:
+        config:
+          filter: {}
 
 organization:
   name: mozilla
@@ -59,7 +144,7 @@ integrations:
     #   apiBaseUrl: https://ghe.example.net/api/v3
     #   token: ${GHE_TOKEN}
 
-proxy:
+# proxy:
   ### Example for how to add a proxy endpoint for the frontend.
   ### A typical reason to do this is to handle HTTPS and CORS for internal services.
   # endpoints:
@@ -82,26 +167,58 @@ auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
   environment: dev
   providers:
-    # See https://backstage.io/docs/auth/guest/provider
-    guest: {}
+    # See https://backstage.io/docs/auth/guest/provider.
+    # In dev we sign the guest in as a real catalog user so ownership
+    # filters ("My Groups", "owned by me") and permission checks behave
+    # as they would for the SSO'd user.
+    guest:
+      userEntityRef: user:workgroups/wstuckey-mozilla-com
+      ownershipEntityRefs:
+        - user:workgroups/wstuckey-mozilla-com
 
-scaffolder:
+# scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
 
 catalog:
+  providers:
+    mozcloud:
+      tenants:
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+          table: tenants
+          # Bill jobs to a project the local user has bigquery.jobs.create on;
+          # `mozdata` is read-only for most analysts.
+          billingProject: wstuckey-sandbox
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
+      workgroups:
+        # JOIN of `wstuckey_workgroups` (sponsor + subgroup names) with
+        # `wstuckey_subgroup_members` (flat membership with resolved
+        # service-account emails).
+        bigquery:
+          project: mozdata
+          dataset: analysis
+          billingProject: wstuckey-sandbox
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
 
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, User, Group]
 
-  locations:
-    - type: file
-      target: scaffolder-templates/*/template.yaml
-      rules:
-        - allow:
-            - Template
+  # locations:
+  #   - type: file
+  #     target: scaffolder-templates/*/template.yaml
+  #     rules:
+  #       - allow:
+  #           - Template
 
 # see https://backstage.io/docs/permissions/getting-started for more on the permission framework
 permission:

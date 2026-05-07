@@ -1,4 +1,3 @@
-import { HomePageLayoutBlueprint } from '@backstage/plugin-home-react/alpha';
 import {
   HomePageRecentlyVisited,
   HomePageStarredEntities,
@@ -56,7 +55,7 @@ const tools = [
   },
 ];
 
-const MozillaHomePage = () => {
+export const HomePage = () => {
   const classes = useStyles();
   return (
     <SearchContextProvider>
@@ -91,9 +90,3 @@ const MozillaHomePage = () => {
     </SearchContextProvider>
   );
 };
-
-export const homePageLayout = HomePageLayoutBlueprint.make({
-  params: {
-    loader: async () => MozillaHomePage,
-  },
-});

@@ -1,0 +1,80 @@
+globals:
+  version: v1alpha1
+  app_code: socorro
+  function: webservices
+  risk_level: high
+  extra_attributes: {}
+  application_ports:
+    - 8080
+    - 8000
+    - 8100
+    - 8180
+  deployment:
+    type: argocd
+    slack_channel: crash-ingestion-bots
+    gha_deploy_account: false
+    charts:
+      antenna:
+        application_repository: mozilla-services/antenna
+        release_name: antenna
+        images:
+          antenna:
+            auto_update: true
+      socorro:
+        application_repository: mozilla-services/socorro
+        release_name: socorro
+        images:
+          socorro:
+            auto_update: true
+  workgroups:
+    - crash-ingestion
+realms:
+  nonprod:
+    project_id: moz-fx-socorro-nonprod
+    fastly:
+      - YjO6F8d3EGGHKJRWWcauR4
+    environments:
+      - name: stage
+        charts:
+          antenna:
+            images:
+              antenna:
+                image_regex: ^[0-9a-fA-F]{7,}$
+          socorro:
+            images:
+              socorro:
+                image_regex: ^[0-9a-fA-F]{7,}$
+    extra_attributes: {}
+    cpu_request: 40
+    memory_request: 120
+    additional_ipv4:
+      stage:
+        - name: collector
+    internal_ipv4:
+      stage:
+        - name: elasticsearch
+
+  prod:
+    project_id: moz-fx-socorro-prod
+    fastly:
+      - vM70oUfVVsr06doWjiuEP6
+    environments:
+      - name: prod
+        charts:
+          antenna:
+            images:
+              antenna:
+                image_regex: ^v20\d{2}(\.\d{2}){2}(-\d+)?$
+          socorro:
+            images:
+              socorro:
+                image_regex: ^v20\d{2}(\.\d{2}){2}(-\d+)?$
+    extra_attributes: {}
+    cpu_request: 160
+    memory_request: 600
+    additional_ipv4:
+      prod:
+        - name: collector
+    internal_ipv4:
+      prod:
+        - name: elasticsearch

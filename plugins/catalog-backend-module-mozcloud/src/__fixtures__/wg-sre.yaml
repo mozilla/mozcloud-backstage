@@ -1,0 +1,27 @@
+workgroup: sre
+sponsor: htahsildoost@mozilla.com
+managers: []
+tickets:
+  - https://mozilla-hub.atlassian.net/browse/OPST-2223
+subgroups:
+  - name: admins
+    members:
+      - bkochendorfer@firefox.gcp.mozilla.com
+      - jason@firefox.gcp.mozilla.com
+      - jbuck@firefox.gcp.mozilla.com
+      - whd@firefox.gcp.mozilla.com
+    workgroups:
+      - cloud-engineering/admins
+      - foundational-sre/admins
+      - runtime-sre/admins
+  - name: developers
+    members: []
+    workgroups: []
+  - name: viewers
+    members:
+      - bvandenberk@firefox.gcp.mozilla.com
+      - htahsildoost@mozilla.com
+    workgroups:
+      - cloud-engineering/viewers
+      - foundational-sre/viewers
+      - runtime-sre/viewers
