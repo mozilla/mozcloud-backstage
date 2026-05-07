@@ -9,12 +9,24 @@ import {
   LoggerService,
 } from '@backstage/backend-plugin-api';
 
-import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
+import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
 
-import { ANNOTATION_LOCATION, ANNOTATION_ORIGIN_LOCATION, Entity, GroupEntityV1alpha1, UserEntityV1alpha1 } from '@backstage/catalog-model';
-import { EntityProvider, EntityProviderConnection } from '@backstage/plugin-catalog-node';
+import {
+  ANNOTATION_LOCATION,
+  ANNOTATION_ORIGIN_LOCATION,
+  Entity,
+  GroupEntityV1alpha1,
+  UserEntityV1alpha1,
+} from '@backstage/catalog-model';
+import {
+  EntityProvider,
+  EntityProviderConnection,
+} from '@backstage/plugin-catalog-node';
 
-import { DefaultGithubCredentialsProvider, ScmIntegrations } from '@backstage/integration';
+import {
+  DefaultGithubCredentialsProvider,
+  ScmIntegrations,
+} from '@backstage/integration';
 
 import { Config } from '@backstage/config';
 
@@ -56,15 +68,24 @@ export class MozcloudEntityProvider implements EntityProvider {
 
   async run(): Promise<void> {
     if (!this.connection) {
-      throw new Error("not initialized");
+      throw new Error('not initialized');
     }
 
-    const entitySourceLocation: { owner: string, repo: string, workgroupsPath: string, tenantsPath: string, ref: string } = this.config.get("catalog.providers.mozcloud.entitySourceLocation");
+    const entitySourceLocation: {
+      owner: string;
+      repo: string;
+      workgroupsPath: string;
+      tenantsPath: string;
+      ref: string;
+    } = this.config.get('catalog.providers.mozcloud.entitySourceLocation');
 
     // do some github experiments first
     const integrations = ScmIntegrations.fromConfig(this.config);
-    const credentialsProvider = DefaultGithubCredentialsProvider.fromIntegrations(integrations);
-    const { token } = await credentialsProvider.getCredentials({ url: `https://github.com/${entitySourceLocation.owner}/${entitySourceLocation.repo}`});
+    const credentialsProvider =
+      DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+    const { token } = await credentialsProvider.getCredentials({
+      url: `https://github.com/${entitySourceLocation.owner}/${entitySourceLocation.repo}`,
+    });
     const octokit = new Octokit({ auth: token });
 
     const response = await octokit.repos.getContent({
@@ -79,7 +100,7 @@ export class MozcloudEntityProvider implements EntityProvider {
 
     if (Array.isArray(items)) {
       for (const item of items) {
-        if (item.type === "file" && item.name.toLowerCase().endsWith("yaml")) {
+        if (item.type === 'file' && item.name.toLowerCase().endsWith('yaml')) {
           this.logger.info(`.. processing workgroup file: ${item.name}`);
 
           const fileResponse = await octokit.repos.getContent({
@@ -89,7 +110,10 @@ export class MozcloudEntityProvider implements EntityProvider {
             ref: entitySourceLocation.ref,
           });
 
-          const content = Buffer.from((fileResponse.data as any).content, "base64").toString("utf-8");
+          const content = Buffer.from(
+            (fileResponse.data as any).content,
+            'base64',
+          ).toString('utf-8');
           const workgroup = YAML.parse(content);
 
           workgroups.push(workgroup);
@@ -103,22 +127,28 @@ export class MozcloudEntityProvider implements EntityProvider {
       workgroup_emails.set(workgroup.workgroup, new Map());
 
       for (const subgroup of workgroup.subgroups) {
-        workgroup_emails.get(workgroup.workgroup).set(subgroup.name, subgroup.members ?? []);
+        workgroup_emails
+          .get(workgroup.workgroup)
+          .set(subgroup.name, subgroup.members ?? []);
       }
     }
 
     for (const workgroup of workgroups) {
       for (const subgroup of workgroup.subgroups) {
         for (const subworkgroup of subgroup.workgroups ?? []) {
-          const parts = subworkgroup.split("/");
+          const parts = subworkgroup.split('/');
 
           if (workgroup_emails.get(parts[0]).get(parts[1])) {
             for (const email of workgroup_emails.get(parts[0]).get(parts[1])) {
-              workgroup_emails.get(workgroup.workgroup).get(subgroup.name).push(email);
+              workgroup_emails
+                .get(workgroup.workgroup)
+                .get(subgroup.name)
+                .push(email);
             }
-
           } else {
-            this.logger.error(`workgroup ${workgroup.workgroup}/${subgroup.name} tries to inherit members from unknown: ${subworkgroup}`);
+            this.logger.error(
+              `workgroup ${workgroup.workgroup}/${subgroup.name} tries to inherit members from unknown: ${subworkgroup}`,
+            );
           }
         }
       }
@@ -129,8 +159,8 @@ export class MozcloudEntityProvider implements EntityProvider {
 
     for (const workgroup of workgroup_emails.keys()) {
       const groupEntity: GroupEntityV1alpha1 = {
-        apiVersion: "backstage.io/v1alpha1",
-        kind: "Group",
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'Group',
         metadata: {
           annotations: {
             [ANNOTATION_LOCATION]: `mozcloud-workgroup:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/${workgroup}.yaml`,
@@ -139,7 +169,7 @@ export class MozcloudEntityProvider implements EntityProvider {
           name: workgroup,
         },
         spec: {
-          type: "mozcloud-workgroup",
+          type: 'mozcloud-workgroup',
           profile: {
             displayName: workgroup,
           },
@@ -150,11 +180,13 @@ export class MozcloudEntityProvider implements EntityProvider {
       groupResources.set(workgroup, groupEntity);
 
       for (const subgroup of workgroup_emails.get(workgroup).keys()) {
-        groupResources.get(workgroup).spec.children.push(`${workgroup}--${subgroup}`);
+        groupResources
+          .get(workgroup)
+          .spec.children.push(`${workgroup}--${subgroup}`);
 
         const subgroupEntity: GroupEntityV1alpha1 = {
-          apiVersion: "backstage.io/v1alpha1",
-          kind: "Group",
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Group',
           metadata: {
             annotations: {
               [ANNOTATION_LOCATION]: `mozcloud-workgroup:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/${workgroup}.yaml`,
@@ -163,7 +195,7 @@ export class MozcloudEntityProvider implements EntityProvider {
             name: `${workgroup}--${subgroup}`,
           },
           spec: {
-            type: "mozcloud-workgroup",
+            type: 'mozcloud-workgroup',
             profile: {
               displayName: `${workgroup}--${subgroup}`,
             },
@@ -171,7 +203,7 @@ export class MozcloudEntityProvider implements EntityProvider {
           },
         };
 
-        groupResources.set(`${workgroup}--${subgroup}`, subgroupEntity)
+        groupResources.set(`${workgroup}--${subgroup}`, subgroupEntity);
       }
     }
 
@@ -181,12 +213,12 @@ export class MozcloudEntityProvider implements EntityProvider {
     for (const workgroup of workgroup_emails.keys()) {
       for (const subgroup of workgroup_emails.get(workgroup).keys()) {
         for (const email of workgroup_emails.get(workgroup).get(subgroup)) {
-          const parts = email.split("@");
+          const parts = email.split('@');
 
           if (!userResources.has(parts[0])) {
             const userEntity: UserEntityV1alpha1 = {
-              apiVersion: "backstage.io/v1alpha1",
-              kind: "User",
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'User',
               metadata: {
                 annotations: {
                   [ANNOTATION_LOCATION]: `mozcloud-user:https://people.mozilla.org/s?query=${email}&who=staff`,
@@ -199,34 +231,36 @@ export class MozcloudEntityProvider implements EntityProvider {
                   displayName: parts[0],
                   email: email,
                 },
-                memberOf: [
-                  `${workgroup}--${subgroup}`,
-                ],
+                memberOf: [`${workgroup}--${subgroup}`],
               },
             };
 
             userResources.set(parts[0], userEntity);
           } else {
-            userResources.get(parts[0]).spec.memberOf.push(`${workgroup}--${subgroup}`);
+            userResources
+              .get(parts[0])
+              .spec.memberOf.push(`${workgroup}--${subgroup}`);
           }
         }
       }
     }
 
-    this.logger.info(`found ${groupResources.size} mozcloud workgroups`)
-    this.logger.info(`found ${userResources.size} mozcloud users`)
+    this.logger.info(`found ${groupResources.size} mozcloud workgroups`);
+    this.logger.info(`found ${userResources.size} mozcloud users`);
 
-    const allEntities = Array.from(groupResources.values()).concat(Array.from(userResources.values())).map(entity => ({
-      entity, locationKey: `mozcloud-provider:${this.env}`,
-    }));
+    const allEntities = Array.from(groupResources.values())
+      .concat(Array.from(userResources.values()))
+      .map(entity => ({
+        entity,
+        locationKey: `mozcloud-provider:${this.env}`,
+      }));
 
     await this.connection.applyMutation({
-      type: "full",
+      type: 'full',
       entities: allEntities,
     });
   }
 }
-
 
 export const catalogModuleMozcloud = createBackendModule({
   pluginId: 'catalog',
@@ -240,9 +274,18 @@ export const catalogModuleMozcloud = createBackendModule({
         config: coreServices.rootConfig,
       },
       async init({ logger, catalog, scheduler, config }) {
-        const frequency_minutes: number = config.getOptionalNumber("catalog.providers.mozcloud.schedule.frequency.minutes") || 60;
-        const timeout_seconds : number = config.getOptionalNumber("catalog.providers.mozcloud.schedule.timeout.seconds") || 10;
-        const initialDelay_seconds : number = config.getOptionalNumber("catalog.providers.mozcloud.schedule.initialDelay.seconds") || 30;
+        const frequency_minutes: number =
+          config.getOptionalNumber(
+            'catalog.providers.mozcloud.schedule.frequency.minutes',
+          ) || 60;
+        const timeout_seconds: number =
+          config.getOptionalNumber(
+            'catalog.providers.mozcloud.schedule.timeout.seconds',
+          ) || 10;
+        const initialDelay_seconds: number =
+          config.getOptionalNumber(
+            'catalog.providers.mozcloud.schedule.initialDelay.seconds',
+          ) || 30;
 
         const taskRunner = scheduler.createScheduledTaskRunner({
           frequency: { minutes: frequency_minutes },
@@ -250,7 +293,12 @@ export const catalogModuleMozcloud = createBackendModule({
           initialDelay: { seconds: initialDelay_seconds },
         });
 
-        const mozcloud = new MozcloudEntityProvider("dev", taskRunner, logger, config);
+        const mozcloud = new MozcloudEntityProvider(
+          'dev',
+          taskRunner,
+          logger,
+          config,
+        );
         catalog.addEntityProvider(mozcloud);
       },
     });

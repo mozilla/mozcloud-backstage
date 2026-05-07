@@ -10,9 +10,12 @@ import {
 
 import Glean from '@mozilla/glean/web';
 import GleanMetrics from '@mozilla/glean/metrics';
-import { ConfigurationInterface as GleanConfig } from '@mozilla/glean/dist/types/core/config';
 import { JsonObject } from '@backstage/types';
 import { create } from './metrics/backstage';
+
+// The Glean web entry exposes initialize but not the standalone
+// ConfigurationInterface; derive it from the parameter signature.
+type GleanConfig = NonNullable<Parameters<typeof Glean.initialize>[2]>;
 
 interface DebugConfig extends JsonObject {
   logging?: boolean;
@@ -28,8 +31,9 @@ export class GleanAnalytics implements AnalyticsApi {
   ) {
     if (debug) {
       Glean.setLogPings(!!debug.logging);
-      // set the debug tag if it is defined
-      debug.tag && Glean.setDebugViewTag(debug.tag);
+      if (debug.tag) {
+        Glean.setDebugViewTag(debug.tag);
+      }
     }
     Glean.initialize(appId, enabled, gleanConfig);
   }

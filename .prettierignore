@@ -2,3 +2,8 @@ dist
 dist-types
 coverage
 .vscode
+node_modules
+**/.venv
+**/node_modules
+e2e-test-report
+plugins/glean/src/metrics

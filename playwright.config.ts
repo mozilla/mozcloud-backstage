@@ -27,17 +27,19 @@ export default defineConfig({
     timeout: 5_000,
   },
 
-  // Run your local dev server before starting the tests
-  webServer: process.env.CI
-    ? []
-    : [
-        {
-          command: 'yarn start',
-          port: 3000,
-          reuseExistingServer: true,
-          timeout: 60_000,
-        },
-      ],
+  // Run your local dev server before starting the tests.
+  // We use `yarn start` in both CI and local so the frontend (3000) and
+  // backend (7007) come up together. The backstage-cli build artifact is
+  // a packaged tarball, not a directly executable entry point, so running
+  // the backend binary in CI would require an extra unpack step.
+  webServer: [
+    {
+      command: 'yarn start',
+      port: 3000,
+      reuseExistingServer: !process.env.CI,
+      timeout: process.env.CI ? 180_000 : 60_000,
+    },
+  ],
 
   forbidOnly: !!process.env.CI,
 
@@ -47,9 +49,7 @@ export default defineConfig({
 
   use: {
     actionTimeout: 0,
-    baseURL:
-      process.env.PLAYWRIGHT_URL ??
-      (process.env.CI ? 'http://localhost:7007' : 'http://localhost:3000'),
+    baseURL: process.env.PLAYWRIGHT_URL ?? 'http://localhost:3000',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
