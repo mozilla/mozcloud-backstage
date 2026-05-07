@@ -1,5 +1,5 @@
 # Stage 1 - Create yarn install skeleton layer
-FROM node:18-bookworm-slim AS packages
+FROM node:22-bookworm-slim AS packages
 
 WORKDIR /app
 COPY package.json yarn.lock .yarnrc.yml ./
@@ -11,7 +11,7 @@ COPY plugins plugins
 RUN find packages \! -name "package.json" -mindepth 2 -maxdepth 2 -exec rm -rf {} \+
 
 # Stage 2 - Install dependencies and build packages
-FROM node:18-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 RUN set -x \
     && addgroup --gid 10001 app \
     && adduser --disabled-password \
@@ -27,13 +27,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends python3 g++ build-essential && \
     yarn config set python /usr/bin/python3
-
-# Install sqlite3 dependencies. You can skip this if you don't use sqlite3 in the image,
-# in which case you should also move better-sqlite3 to "devDependencies" in package.json.
-#RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-#    apt-get update && \
-#    apt-get install -y --no-install-recommends libsqlite3-dev
 
 USER app
 WORKDIR /app
@@ -57,7 +50,7 @@ RUN mkdir packages/backend/dist/skeleton packages/backend/dist/bundle \
     && tar xzf packages/backend/dist/bundle.tar.gz -C packages/backend/dist/bundle
 
 # Stage 3 - Build the actual backend image and install production dependencies
-FROM node:18-bookworm-slim
+FROM node:22-bookworm-slim
 RUN set -x \
     && addgroup --gid 10001 app \
     && adduser --disabled-password \
@@ -73,13 +66,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends python3 g++ build-essential && \
     yarn config set python /usr/bin/python3
-
-# Install sqlite3 dependencies. You can skip this if you don't use sqlite3 in the image,
-# in which case you should also move better-sqlite3 to "devDependencies" in package.json.
-#RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-#    apt-get update && \
-#    apt-get install -y --no-install-recommends libsqlite3-dev
 
 # From here on we use the least-privileged `node` user to run the backend.
 USER app
