@@ -24,15 +24,21 @@ export interface Config {
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
         /**
-         * Reserved for the v2 workgroups provider, wired up but inert until
-         * the `mozdata.mozcloud.workgroups` BigQuery table exists.
+         * Workgroups source. BigQuery mode joins two tables — a parent
+         * workgroup table and a flat (workgroup, subgroup, value) members
+         * table — to reconstruct the nested membership shape consumed by
+         * the entity transform.
          */
         workgroups?: {
           bigquery?: {
             project: string;
             dataset: string;
-            table: string;
+            /** Defaults to `wstuckey_workgroups`. */
+            workgroupsTable?: string;
+            /** Defaults to `wstuckey_subgroup_members`. */
+            subgroupMembersTable?: string;
           };
+          /** Local-dev fallback: directory of workgroup YAMLs. */
           path?: string;
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };

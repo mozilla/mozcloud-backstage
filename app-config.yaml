@@ -102,9 +102,13 @@ catalog:
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
       workgroups:
-        # Workgroups don't have a BigQuery export yet — read the YAML
-        # files from the same global-platform-admin checkout.
-        path: ../../../global-platform-admin/google-workspace-management/tf/workgroups
+        # Joins mozdata.analysis.wstuckey_workgroups (parent metadata +
+        # subgroup names) with mozdata.analysis.wstuckey_subgroup_members
+        # (exploded membership with resolved service account emails).
+        bigquery:
+          project: mozdata
+          dataset: analysis
+        # path: ../../../global-platform-admin/google-workspace-management/tf/workgroups
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }

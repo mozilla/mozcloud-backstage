@@ -8,7 +8,14 @@ import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { MozcloudWorkgroupEntityProvider } from './MozcloudWorkgroupEntityProvider';
 import { createSource } from './sources/createSource';
 import { normalizeTenantRow } from './sources/BigQuerySource';
-import { TenantRowSchema, WorkgroupRowSchema } from './transform/schema';
+import { PathSource } from './sources/PathSource';
+import { WorkgroupBigQuerySource } from './sources/WorkgroupBigQuerySource';
+import { Source } from './sources/Source';
+import {
+  TenantRowSchema,
+  WorkgroupRow,
+  WorkgroupRowSchema,
+} from './transform/schema';
 
 const DEFAULT_SCHEDULE = {
   frequency: { minutes: 30 },
@@ -74,14 +81,32 @@ export const catalogModuleMozcloud = createBackendModule({
                 wgCfg.getConfig('schedule'),
               )
             : DEFAULT_SCHEDULE;
-          const source = createSource(
-            {
-              bigquery: wgCfg.getOptional('bigquery'),
-              path: wgCfg.getOptionalString('path'),
-            },
-            WorkgroupRowSchema,
-            logger,
-          );
+          // Workgroup BigQuery is a JOIN of two tables (the nested
+          // wstuckey_workgroups + the flat wstuckey_subgroup_members),
+          // so it doesn't fit the generic createSource() shape — handle
+          // it explicitly. Path mode still goes through PathSource.
+          const wgBq = wgCfg.getOptional<{
+            project: string;
+            dataset: string;
+            workgroupsTable?: string;
+            subgroupMembersTable?: string;
+          }>('bigquery');
+          const wgPath = wgCfg.getOptionalString('path');
+          if (wgBq && wgPath) {
+            throw new Error(
+              'mozcloud workgroups source must specify exactly one of `bigquery` or `path`',
+            );
+          }
+          let source: Source<WorkgroupRow>;
+          if (wgBq) {
+            source = new WorkgroupBigQuerySource(wgBq, logger);
+          } else if (wgPath) {
+            source = new PathSource(wgPath, WorkgroupRowSchema, logger);
+          } else {
+            throw new Error(
+              'mozcloud workgroups source requires either `bigquery` or `path` to be set',
+            );
+          }
           const taskRunner = scheduler.createScheduledTaskRunner(schedule);
           catalog.addEntityProvider(
             new MozcloudWorkgroupEntityProvider(source, logger, taskRunner),
