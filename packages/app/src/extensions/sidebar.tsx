@@ -66,7 +66,7 @@ export const sidebarExtension = NavContentBlueprint.make({
         </SidebarGroup>
         <SidebarDivider />
         <SidebarGroup label="Menu" icon={<MenuIcon />}>
-          <SidebarItem icon={HomeIcon} to="home" text="Home" />
+          <SidebarItem icon={HomeIcon} to="" text="Home" />
           <SidebarItem icon={CategoryIcon} to="catalog" text="Catalog" />
           <MyGroupsSidebarItem
             singularTitle="My Group"

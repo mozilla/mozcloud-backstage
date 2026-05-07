@@ -1,0 +1,138 @@
+globals:
+  version: v1alpha1
+  app_code: fxa
+  function: webservices
+  risk_level: high
+  risk_rating:
+    confidentiality: 4
+    integrity: 4
+    availability: 4
+  risk_uuid: d189d104-70e5-444a-815b-a933e66f9bf0
+  extra_attributes:
+    pod_security: privileged
+  application_ports:
+    - 8080
+    - 8081
+    - 3128
+    - 13133
+  deployment:
+    type: argocd
+    charts:
+      fxa:
+        application_repository: mozilla/fxa
+        images:
+          fxa-mono: {}
+  entitlements:
+    enabled: true
+    additional_entitlements:
+      - name: admin-ent
+        roles:
+          - roles/compute.admin
+          - roles/dns.admin
+          - roles/storage.admin
+          - roles/spanner.admin
+          - roles/cloudsql.admin
+        principals:
+          - workgroup:fxa/developers
+        approval_workflow:
+          principals:
+            - workgroup:fxa/developers
+      - name: secret-add-access
+        roles:
+          - roles/secretmanager.secretAccessor
+          - roles/secretmanager.secretVersionAdder
+        principals:
+          - workgroup:fxa/developers
+        approval_workflow:
+          principals:
+            - workgroup:fxa/developers
+    additional_roles: []
+  workgroups:
+    - fxa
+  capabilities:
+    entitlements: enabled
+realms:
+  nonprod:
+    fastly:
+      - ThWgJPZdjRq636HIhk8jpj
+      - aIrnrEgvDeTSVG17l3C4U0
+      - peULblENa0IpFoq5ti4Al6
+      - 7TXoVynrimJY61fiYIB4H9
+      - L9jS1ebZKvGKyLGTRLS9IZ
+      - M4zyioLiJm1pCzgk2ENKMU
+      - QIi0F71pCan68p2bO7lM11
+    deployment:
+      type: argocd
+      slack_channel: fxa-bots
+      charts:
+        fxa:
+          images:
+            fxa-mono:
+              auto_update: true
+    project_id: moz-fx-fxa-nonprod
+    environments:
+      - name: dev
+        charts:
+          fxa:
+            release_name: gha
+      - name: stage
+        charts:
+          fxa:
+            release_name: gha
+            images:
+              fxa-mono:
+                image_regex: v\d\.\d{3}\.\d{1,2}
+    memory_request: 64
+    cpu_request: 64
+    additional_ipv4:
+      stage:
+        - name: admin-panel
+        - name: external-gateway
+        - name: fxa-auth
+        - name: payments
+    internal_ipv4:
+      stage:
+        - name: app
+    extra_attributes:
+      stage: |
+        {
+          "log_router": "bigquery"
+        }
+
+  prod:
+    deployment:
+      type: argocd
+      slack_channel: fxa-bots
+    fastly:
+      - dZoYvdSjuyt0UnO0B6Xhfa
+      - zViyYkjDUhqV6JF9VwCZcS
+      - bKAPOwY1fp42rWNIOHkiyL
+      - 5BSulbOJDIDOnSojhnFjiZ
+      - Z7jiM6SRGTnivFzoLnAxJM
+      - NOVT2rFQRq2qELfXgRITVE
+      - q5kG2cDZhfeb9fiPbGHS20
+    project_id: moz-fx-fxa-prod
+    environments:
+      - name: prod
+        charts:
+          fxa:
+            release_name: gha
+            images:
+              fxa-mono:
+                image_regex: v\d\.\d{3}\.\d{1,2}
+    memory_request: 900
+    cpu_request: 750
+    additional_ipv4:
+      prod:
+        - name: admin-panel
+        - name: external-gateway
+        - name: fxa-auth
+        - name: payments
+    internal_ipv4:
+      prod:
+        - name: app
+    extra_attributes:
+      prod: |
+        {
+          "log_router": "bigquery"
+        }
