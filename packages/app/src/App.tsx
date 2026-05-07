@@ -16,13 +16,10 @@ import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
 import githubActionsPlugin from '@backstage-community/plugin-github-actions/alpha';
 import homePlugin from '@backstage/plugin-home/alpha';
+import gleanPlugin from 'backstage-plugin-glean';
 import { techDocsReportIssueAddonModule } from '@backstage/plugin-techdocs-module-addons-contrib/alpha';
 
-import {
-  scmIntegrationsApi,
-  scmAuthApi,
-  gleanAnalyticsApi,
-} from './extensions/apis';
+import { scmIntegrationsApi, scmAuthApi } from './extensions/apis';
 import { signInPageExtension } from './extensions/signInPage';
 import { sidebarExtension } from './extensions/sidebar';
 import {
@@ -36,7 +33,6 @@ const appModule = createFrontendModule({
   extensions: [
     scmIntegrationsApi,
     scmAuthApi,
-    gleanAnalyticsApi,
     signInPageExtension,
     sidebarExtension,
     alertDisplayElement,
@@ -65,6 +61,7 @@ const features: FrontendFeature[] = [
   kubernetesPlugin,
   githubActionsPlugin,
   homePlugin,
+  gleanPlugin,
 ];
 
 const app = createApp({

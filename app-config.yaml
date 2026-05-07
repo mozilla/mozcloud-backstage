@@ -10,11 +10,9 @@ app:
         tag: backstage-dev
       environment: development
   extensions:
-    - app/routes:
+    - page:home:
         config:
-          redirects:
-            - from: /
-              to: /home
+          path: /
     - api:home/visits: true
     - app-root-element:home/visit-listener: true
 
