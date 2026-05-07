@@ -136,6 +136,18 @@ describe('workgroupToEntities', () => {
       expect(members).toContain(userRef('vbudhram@mozilla.com'));
       expect(members.length).toBeGreaterThanOrEqual(14);
     });
+
+    it('parent workgroup members include union of every subgroup so ownership flows down', () => {
+      const parent = byKind('Group').find(g => g.metadata.name === 'fxa')!;
+      const parentMembers = (parent.spec as { members?: string[] }).members!;
+      // Sampled across admins, developers, viewers — ownership of a System
+      // by group:workgroups/fxa must surface for users in any subgroup.
+      expect(parentMembers).toContain(userRef('wclouser@mozilla.com')); // admins
+      expect(parentMembers).toContain(userRef('atoufali@mozilla.com')); // developers
+      expect(parentMembers).toContain(
+        userRef('akomarzewski@mozilla.com'),
+      ); // viewers
+    });
   });
 });
 

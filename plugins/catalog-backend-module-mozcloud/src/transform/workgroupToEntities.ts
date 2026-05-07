@@ -37,6 +37,13 @@ export function workgroupToEntities(
   const childRefs = wg.subgroups.map(sub =>
     crossWorkgroupRef(`${wg.workgroup}/${sub.name}`),
   );
+  // Backstage ownership relations are direct, not transitive through the
+  // Group hierarchy. A System owned by `group:workgroups/fxa` will only
+  // surface as "owned" for users whose `memberOf` includes that exact ref.
+  // To propagate ownership down to humans, the parent workgroup lists the
+  // union of every subgroup's members directly. The merge phase in the
+  // provider then writes that membership back onto each User's `memberOf`.
+  const parentMembers = collectMemberEmails(wg).map(userRef);
 
   entities.push({
     apiVersion: 'backstage.io/v1alpha1',
@@ -54,7 +61,7 @@ export function workgroupToEntities(
       type: 'workgroup',
       profile: pickDefined({ email: wg.sponsor }),
       children: childRefs,
-      members: [],
+      members: parentMembers,
     },
   });
 
