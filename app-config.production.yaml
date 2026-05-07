@@ -89,6 +89,20 @@ catalog:
         schedule:
           frequency: { minutes: 60 }
           timeout: { minutes: 3 }
+    mozcloud:
+      tenants:
+        # Synced on every merge to main of mozilla-services/global-platform-admin.
+        # Backend reads via Workload Identity — the SA bound to the
+        # backstage workload needs roles/bigquery.dataViewer on
+        # mozdata.mozcloud and roles/bigquery.jobUser on its own project.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+          table: tenants
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
 
 auth:
   environment: production
