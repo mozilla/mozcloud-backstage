@@ -48,6 +48,7 @@
     "@backstage/plugin-search-backend-module-techdocs": "^0.4.13",
     "@backstage/plugin-search-backend-node": "^1.4.3",
     "@backstage/plugin-techdocs-backend": "^2.1.7",
+    "@internal/plugin-catalog-backend-module-mozcloud": "^0.1.0",
     "app": "link:../app",
     "node-gyp": "^10.0.0",
     "pg": "^8.11.3"

@@ -91,6 +91,16 @@ catalog:
       schedule:
         frequency: { hours: 1 }
         timeout: { minutes: 50 }
+    mozcloud:
+      tenants:
+        # Local-dev fallback: read tenant YAMLs from a sibling checkout.
+        # Path is relative to packages/backend (the backend's CWD).
+        # In production this is replaced with a `bigquery:` block.
+        path: ../../../global-platform-admin/tenants
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

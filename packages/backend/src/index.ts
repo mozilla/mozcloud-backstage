@@ -70,6 +70,11 @@ backend.add(import('@backstage/plugin-catalog-backend-module-github'));
 backend.add(import('@backstage/plugin-catalog-backend-module-github-org'));
 
 //
+// add mozcloud tenant catalog provider (BigQuery / path source)
+//
+backend.add(import('@internal/plugin-catalog-backend-module-mozcloud'));
+
+//
 // add github events plugin
 //
 backend.add(import('@backstage/plugin-events-backend-module-github'));
