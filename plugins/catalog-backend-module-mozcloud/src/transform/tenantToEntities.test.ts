@@ -22,6 +22,13 @@ describe('tenantToEntities', () => {
     const entities = tenantToEntities(tenant, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
+    it('emits a Domain for the tenant function', () => {
+      const domains = byKind('Domain');
+      expect(domains).toHaveLength(1);
+      expect(domains[0].metadata.name).toBe('webservices');
+      expect(domains[0].spec).toMatchObject({ owner: 'group:default/unowned' });
+    });
+
     it('emits one System with workgroup-namespaced owner', () => {
       const systems = byKind('System');
       expect(systems).toHaveLength(1);

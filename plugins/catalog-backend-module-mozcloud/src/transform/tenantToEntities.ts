@@ -12,14 +12,15 @@ import {
  * represent it.
  *
  * Emits:
+ *   - 1 Domain (the tenant's function — webservices/dataservices/sandbox/etc.)
  *   - 1 System (the tenant)
  *   - 1 Component per chart in globals.deployment.charts
  *   - 1 Resource per realm with a project_id (gcp-project)
  *   - 1 Resource per entry in globals.entitlements.additional_entitlements
  *   - 1 Group shell per referenced workgroup (in the `workgroups` namespace)
  *
- * The Group shells are deduplicated at the provider level — multiple tenants
- * frequently reference the same workgroup.
+ * Domain and Group entities deduplicate at the provider level — many
+ * tenants share the same function and the same workgroups.
  */
 export function tenantToEntities(
   tenant: TenantRow,
@@ -27,6 +28,7 @@ export function tenantToEntities(
 ): Entity[] {
   const sysName = tenant.globals.app_code;
   const owner = tenantOwner(tenant.globals.workgroups);
+  const fn = tenant.globals.function;
   const entities: Entity[] = [];
 
   const baseAnn = (extra: Record<string, string | undefined> = {}) =>
@@ -35,6 +37,15 @@ export function tenantToEntities(
       'backstage.io/managed-by-origin-location': locationRef,
       ...extra,
     });
+
+  // Domain: spec.owner is required; the function category spans teams,
+  // so fall back to a stable placeholder rather than picking one arbitrarily.
+  entities.push({
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Domain',
+    metadata: { name: fn, annotations: baseAnn() },
+    spec: { owner: 'group:default/unowned' },
+  });
 
   entities.push({
     apiVersion: 'backstage.io/v1alpha1',
