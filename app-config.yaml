@@ -9,6 +9,12 @@ app:
         logging: false
         tag: backstage-dev
       environment: development
+  extensions:
+    - app/routes:
+        config:
+          redirects:
+            - from: /
+              to: /catalog
 
 organization:
   name: Mozilla
