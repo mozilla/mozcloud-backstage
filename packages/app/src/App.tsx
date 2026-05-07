@@ -15,6 +15,7 @@ import orgPlugin from '@backstage/plugin-org/alpha';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
 import githubActionsPlugin from '@backstage-community/plugin-github-actions/alpha';
+import homePlugin from '@backstage/plugin-home/alpha';
 import { techDocsReportIssueAddonModule } from '@backstage/plugin-techdocs-module-addons-contrib/alpha';
 
 import {
@@ -28,6 +29,7 @@ import {
   alertDisplayElement,
   oauthRequestDialogElement,
 } from './extensions/rootElements';
+import { homePageLayout } from './extensions/homePage';
 
 const appModule = createFrontendModule({
   pluginId: 'app',
@@ -42,8 +44,14 @@ const appModule = createFrontendModule({
   ],
 });
 
+const homeModule = createFrontendModule({
+  pluginId: 'home',
+  extensions: [homePageLayout],
+});
+
 const features: FrontendFeature[] = [
   appModule,
+  homeModule,
   catalogPlugin,
   catalogGraphPlugin,
   catalogImportPlugin,
@@ -56,6 +64,7 @@ const features: FrontendFeature[] = [
   userSettingsPlugin,
   kubernetesPlugin,
   githubActionsPlugin,
+  homePlugin,
 ];
 
 const app = createApp({

@@ -14,7 +14,7 @@ app:
         config:
           redirects:
             - from: /
-              to: /catalog
+              to: /home
 
 organization:
   name: Mozilla
