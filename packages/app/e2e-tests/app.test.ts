@@ -21,19 +21,28 @@ async function signInAsGuest(page: Page) {
   const enterButton = page.getByRole('button', { name: 'Enter' });
   await expect(enterButton).toBeVisible();
   await enterButton.click();
-  // The legacy App.tsx redirects `/` to `/catalog`. Heading text is
-  // `<organization.name> Catalog` from app-config.yaml.
-  await expect(page.getByRole('heading', { name: /Catalog$/ })).toBeVisible();
+  // After sign-in `/` is mounted to the home plugin
+  // (app-config.yaml `app.extensions: page:home: { config: { path: / } }`).
+  await expect(
+    page.getByRole('heading', { name: 'Welcome to Mozilla Backstage' }),
+  ).toBeVisible();
 }
 
 test('App renders the welcome page and signs in', async ({ page }) => {
   await signInAsGuest(page);
 });
 
+test('Catalog page renders', async ({ page }) => {
+  await signInAsGuest(page);
+  await page.goto('/catalog');
+  // Heading text is `<organization.name> Catalog` from app-config.yaml.
+  await expect(page.getByRole('heading', { name: /Catalog$/ })).toBeVisible();
+});
+
 test('Sidebar exposes the core navigation items', async ({ page }) => {
   await signInAsGuest(page);
-  // Each sidebar item renders an <a> with the visible label as its name.
-  for (const label of ['Home', 'APIs', 'Docs', 'Create...']) {
+  // The new sidebar adds a separate Catalog item alongside Home.
+  for (const label of ['Home', 'Catalog', 'APIs', 'Docs', 'Create...']) {
     await expect(page.getByRole('link', { name: label }).first()).toBeVisible();
   }
 });
@@ -41,9 +50,10 @@ test('Sidebar exposes the core navigation items', async ({ page }) => {
 test('Scaffolder template list renders', async ({ page }) => {
   await signInAsGuest(page);
   await page.goto('/create');
-  await expect(
-    page.getByRole('heading', { name: /Create a New Component|Templates/i }),
-  ).toBeVisible();
+  // The /alpha scaffolder plugin's index page header is just "Create";
+  // Templates is the first tab.
+  await expect(page.getByRole('heading', { name: 'Create' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Templates/i })).toBeVisible();
 });
 
 test('Settings page renders for guest user', async ({ page }) => {

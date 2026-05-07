@@ -10,6 +10,15 @@ app:
 
       enabled: true
       environment: development
+  extensions:
+    # Mount the home plugin's page at the root path (instead of /home).
+    - page:home:
+        config:
+          path: /
+    # The home plugin ships these as opt-in (disabled: true). Enable both
+    # so HomePageRecentlyVisited / HomePageTopVisited have an API to query.
+    - api:home/visits: true
+    - app-root-element:home/visit-listener: true
 
 organization:
   name: mozilla
@@ -93,8 +102,6 @@ catalog:
       rules:
         - allow:
             - Template
-
-  useUrlReadersSearch: true
 
 # see https://backstage.io/docs/permissions/getting-started for more on the permission framework
 permission:
