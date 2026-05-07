@@ -7,11 +7,18 @@ import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node'
 import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { MozcloudWorkgroupEntityProvider } from './MozcloudWorkgroupEntityProvider';
 import { createSource } from './sources/createSource';
+import { normalizeTenantRow } from './sources/BigQuerySource';
+import { TenantRowSchema, WorkgroupRowSchema } from './transform/schema';
+
+const DEFAULT_SCHEDULE = {
+  frequency: { minutes: 30 },
+  timeout: { minutes: 5 },
+  initialDelay: { seconds: 30 },
+};
 
 /**
- * Backstage backend module that registers the mozcloud tenant +
- * (placeholder) workgroup catalog entity providers under the existing
- * catalog plugin.
+ * Backstage backend module that registers the mozcloud tenant and
+ * workgroup catalog entity providers under the existing catalog plugin.
  *
  * Configuration lives under `catalog.providers.mozcloud` — see config.d.ts.
  */
@@ -41,25 +48,20 @@ export const catalogModuleMozcloud = createBackendModule({
             ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
                 tenantsCfg.getConfig('schedule'),
               )
-            : {
-                frequency: { minutes: 30 },
-                timeout: { minutes: 5 },
-                initialDelay: { seconds: 30 },
-              };
+            : DEFAULT_SCHEDULE;
           const source = createSource(
             {
               bigquery: tenantsCfg.getOptional('bigquery'),
               path: tenantsCfg.getOptionalString('path'),
             },
+            TenantRowSchema,
             logger,
+            normalizeTenantRow,
           );
           const taskRunner = scheduler.createScheduledTaskRunner(schedule);
-          const provider = new MozcloudTenantEntityProvider(
-            source,
-            logger,
-            taskRunner,
+          catalog.addEntityProvider(
+            new MozcloudTenantEntityProvider(source, logger, taskRunner),
           );
-          catalog.addEntityProvider(provider);
           logger.info(
             `Registered mozcloud tenant provider (source: ${source.description})`,
           );
@@ -71,10 +73,21 @@ export const catalogModuleMozcloud = createBackendModule({
             ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
                 wgCfg.getConfig('schedule'),
               )
-            : { frequency: { minutes: 30 }, timeout: { minutes: 5 } };
+            : DEFAULT_SCHEDULE;
+          const source = createSource(
+            {
+              bigquery: wgCfg.getOptional('bigquery'),
+              path: wgCfg.getOptionalString('path'),
+            },
+            WorkgroupRowSchema,
+            logger,
+          );
           const taskRunner = scheduler.createScheduledTaskRunner(schedule);
           catalog.addEntityProvider(
-            new MozcloudWorkgroupEntityProvider(logger, taskRunner),
+            new MozcloudWorkgroupEntityProvider(source, logger, taskRunner),
+          );
+          logger.info(
+            `Registered mozcloud workgroup provider (source: ${source.description})`,
           );
         }
       },

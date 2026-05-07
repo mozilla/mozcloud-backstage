@@ -75,13 +75,15 @@ describe('tenantToEntities', () => {
       });
     });
 
-    it('emits a Group shell in the workgroups namespace', () => {
-      const groups = byKind('Group');
-      expect(groups).toHaveLength(1);
-      expect(groups[0].metadata).toMatchObject({
-        name: 'backstage',
-        namespace: 'workgroups',
-      });
+    it('does not emit Group entities (workgroup provider owns that namespace)', () => {
+      expect(byKind('Group')).toHaveLength(0);
+    });
+
+    it('annotates Components with backstage.io/source-location', () => {
+      const components = byKind('Component');
+      expect(
+        components[0].metadata.annotations?.['backstage.io/source-location'],
+      ).toBe('url:https://github.com/mozilla-services/moz-backstage-app/');
     });
 
     it('does not emit any entitlement Resources for tenants without entitlements', () => {

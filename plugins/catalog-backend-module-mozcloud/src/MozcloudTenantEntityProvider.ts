@@ -9,6 +9,7 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { tenantToEntities } from './transform/tenantToEntities';
+import { TenantRow } from './transform/schema';
 
 /**
  * Catalog entity provider that turns rows from a {@link Source} (BigQuery
@@ -21,7 +22,7 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
 
   constructor(
-    private readonly source: Source,
+    private readonly source: Source<TenantRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
   ) {}

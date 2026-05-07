@@ -41,7 +41,7 @@ const TENANT_B: TenantRow = {
   realms: {},
 };
 
-class FakeSource implements Source {
+class FakeSource implements Source<TenantRow> {
   description = 'fake:in-memory';
   constructor(private readonly rows: TenantRow[]) {}
   async fetchAll() {
@@ -85,21 +85,26 @@ describe('MozcloudTenantEntityProvider', () => {
         }`,
     );
 
-    // 2 systems + 2 components + 1 resource (TENANT_A only has prod) + 1 dedup'd group
+    // 1 dedup'd Domain + 2 Systems + 2 Components + 1 Resource (TENANT_A's prod realm)
     expect(refs).toEqual(
       expect.arrayContaining([
+        'domain:default/webservices',
         'system:default/service-a',
         'system:default/service-b',
         'component:default/service-a',
         'component:default/service-b',
         'resource:default/moz-fx-a-prod',
-        'group:workgroups/team-x',
       ]),
     );
 
-    // The team-x Group must appear exactly once despite two tenants emitting it.
-    const groupCount = refs.filter(r => r === 'group:workgroups/team-x').length;
-    expect(groupCount).toBe(1);
+    // The webservices Domain must appear exactly once despite two tenants
+    // emitting it (the workgroup `team-x` is no longer emitted by this
+    // provider — the workgroup provider owns that).
+    const domainCount = refs.filter(
+      r => r === 'domain:default/webservices',
+    ).length;
+    expect(domainCount).toBe(1);
+    expect(refs).not.toContain('group:workgroups/team-x');
 
     // Every emitted entity should carry the provider name as its locationKey.
     for (const e of captured[0].entities) {

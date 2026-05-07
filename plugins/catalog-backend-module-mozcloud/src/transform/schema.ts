@@ -66,3 +66,27 @@ export const TenantRowSchema = z
   .passthrough();
 
 export type TenantRow = z.infer<typeof TenantRowSchema>;
+
+const SubgroupSchema = z
+  .object({
+    name: z.string(),
+    members: z.array(z.string()).default([]),
+    managers: z.array(z.string()).default([]),
+    google_groups: z.array(z.string()).default([]),
+    workgroups: z.array(z.string()).default([]),
+    service_accounts: z.array(z.string()).default([]),
+  })
+  .passthrough();
+
+export const WorkgroupRowSchema = z
+  .object({
+    workgroup: z.string(),
+    sponsor: z.string(),
+    managers: z.array(z.string()).default([]),
+    tickets: z.array(z.string()).default([]),
+    subgroups: z.array(SubgroupSchema).default([]),
+  })
+  .passthrough();
+
+export type WorkgroupRow = z.infer<typeof WorkgroupRowSchema>;
+export type Subgroup = z.infer<typeof SubgroupSchema>;

@@ -1,0 +1,38 @@
+workgroup: fxa
+sponsor: htahsildoost@mozilla.com
+managers: []
+tickets:
+  - https://mozilla-hub.atlassian.net/browse/OPST-296
+  - https://mozilla-hub.atlassian.net/browse/OPST-1814
+subgroups:
+  - name: admins
+    members:
+      - wclouser@mozilla.com
+    workgroups:
+      - sre/admins
+  - name: developers
+    members:
+      - atoufali@mozilla.com
+      - bchen@mozilla.com
+      - clewis@mozilla.com
+      - dalvarez@mozilla.com
+      - dschomburg@mozilla.com
+      - eilina@mozilla.com
+      - jpoyourow@mozilla.com
+      - lchan@mozilla.com
+      - lzugai@mozilla.com
+      - nshirley@mozilla.com
+      - rcrook@mozilla.com
+      - rmuhl@mozilla.com
+      - vbudhram@mozilla.com
+      - vpomerleau@mozilla.com
+  - name: viewers
+    members:
+      - akomarzewski@mozilla.com
+      - bkochendorfer@firefox.gcp.mozilla.com
+      - dkirchner@firefox.gcp.mozilla.com
+      - gkaberere@mozilla.com
+      - kanderson@mozilla.com
+      - kignasiak@mozilla.com
+      - rotto@mozilla.com
+      - ykhurana@mozilla.com

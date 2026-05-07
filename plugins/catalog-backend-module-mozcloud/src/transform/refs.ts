@@ -52,3 +52,49 @@ export function pickDefined<T extends Record<string, string | undefined>>(
   }
   return out;
 }
+
+/**
+ * Backstage entity name for a workgroup subgroup.
+ * `<workgroup>-<subname>` keeps things unique across the `workgroups`
+ * namespace.
+ */
+export function subgroupName(workgroup: string, sub: string): string {
+  return `${workgroup}-${sub}`;
+}
+
+/**
+ * Sanitize a Mozilla email into a Backstage entity name. Backstage names
+ * allow `[a-zA-Z0-9._-]`, but for consistent dashed names we replace `.`
+ * along with `@` and any other non-alphanumeric chars. Examples:
+ *   alice@mozilla.com               -> alice-mozilla-com
+ *   alice@firefox.gcp.mozilla.com   -> alice-firefox-gcp-mozilla-com
+ *   first.last@mozilla.com          -> first-last-mozilla-com
+ *
+ * Including the domain in the name avoids collisions between users with
+ * the same local-part across different Mozilla email domains.
+ */
+export function emailToUserName(email: string): string {
+  return email
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Backstage entity ref for a workgroup user (namespace = workgroups).
+ * Users in this namespace are distinct from the GitHub Org provider's
+ * users in the default namespace.
+ */
+export function userRef(email: string): string {
+  return `user:workgroups/${emailToUserName(email)}`;
+}
+
+/**
+ * Resolve a cross-workgroup reference like `sre/admins` (as it appears
+ * in subgroup composition) into a Backstage Group entity ref.
+ */
+export function crossWorkgroupRef(ref: string): string {
+  const [wg, sub] = ref.split('/');
+  if (!sub) return `group:workgroups/${wg}`;
+  return `group:workgroups/${subgroupName(wg, sub)}`;
+}

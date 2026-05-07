@@ -17,10 +17,13 @@ import {
  *   - 1 Component per chart in globals.deployment.charts
  *   - 1 Resource per realm with a project_id (gcp-project)
  *   - 1 Resource per entry in globals.entitlements.additional_entitlements
- *   - 1 Group shell per referenced workgroup (in the `workgroups` namespace)
  *
- * Domain and Group entities deduplicate at the provider level — many
- * tenants share the same function and the same workgroups.
+ * Workgroup-namespaced Group entities are NOT emitted here — the
+ * MozcloudWorkgroupEntityProvider owns that namespace and emits real
+ * Group entities with sponsor/members/subgroups. The Component owners
+ * here are still workgroup refs; if the workgroup provider is not
+ * configured, those refs will be unresolved (visible in the UI as
+ * warnings).
  */
 export function tenantToEntities(
   tenant: TenantRow,
@@ -69,13 +72,20 @@ export function tenantToEntities(
 
   const charts = Object.entries(tenant.globals.deployment?.charts ?? {});
   for (const [chartName, chart] of charts) {
+    const slug = chart.application_repository;
     entities.push({
       apiVersion: 'backstage.io/v1alpha1',
       kind: 'Component',
       metadata: {
         name: chartComponentName(sysName, chartName, charts.length),
         annotations: baseAnn({
-          'github.com/project-slug': chart.application_repository,
+          // The plugin reads project-slug for PR/Actions integration; the
+          // source-location URL drives the catalog's "View Source" link
+          // and feeds techdocs / scaffolder repo lookups.
+          'github.com/project-slug': slug,
+          'backstage.io/source-location': slug
+            ? `url:https://github.com/${slug}/`
+            : undefined,
           'mozilla.org/deployment-type': tenant.globals.deployment?.type,
         }),
       },
@@ -121,19 +131,6 @@ export function tenantToEntities(
         system: sysName,
         dependsOn: ent.principals.map(workgroupRef),
       },
-    });
-  }
-
-  for (const wg of tenant.globals.workgroups ?? []) {
-    entities.push({
-      apiVersion: 'backstage.io/v1alpha1',
-      kind: 'Group',
-      metadata: {
-        name: wg,
-        namespace: 'workgroups',
-        annotations: baseAnn(),
-      },
-      spec: { type: 'workgroup', children: [], members: [] },
     });
   }
 
