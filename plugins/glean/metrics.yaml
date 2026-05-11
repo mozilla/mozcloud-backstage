@@ -7,15 +7,15 @@ backstage:
     description: |
       Create software from template.
     extra_keys:
-        name:
-          description: Name of software being created
-          type: string
-        entity_ref:
-          description: template ref
-          type: string
-        time_saved:
-          description: time saved by running the template
-          type: quantity
+      name:
+        description: Name of software being created
+        type: string
+      entity_ref:
+        description: template ref
+        type: string
+      time_saved:
+        description: time saved by running the template
+        type: quantity
     notification_emails:
       - wstuckey@mozilla.com
     bugs:
@@ -23,4 +23,3 @@ backstage:
     data_reviews:
       - https://bugzilla.mozilla.org/00000#
     expires: never
-

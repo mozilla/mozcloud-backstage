@@ -10,10 +10,11 @@ _This plugin was created through the Backstage CLI_
 import { createGleanAPIFactory } from 'backstage-plugin-glean';
 
 export const apis: AnyApiFactory[] = [
-    //...
-    createGleanAPIFactory(),
+  //...
+  createGleanAPIFactory(),
 ];
 ```
 
 ## Updating Metrics
+
 After adding new metrics to `metrics.yaml` run `npm build:glean` and commit the updating files in `src/metrics`
