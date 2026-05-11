@@ -1,20 +1,18 @@
 import {
   AnalyticsApi,
   AnalyticsEvent,
-  AnyApiFactory,
   ConfigApi,
-  analyticsApiRef,
   configApiRef,
-  createApiFactory,
-} from '@backstage/core-plugin-api';
+  createFrontendPlugin,
+} from '@backstage/frontend-plugin-api';
+import { AnalyticsImplementationBlueprint } from '@backstage/plugin-app-react';
+import { JsonObject } from '@backstage/types';
 
 import Glean from '@mozilla/glean/web';
 import GleanMetrics from '@mozilla/glean/metrics';
-import { JsonObject } from '@backstage/types';
+
 import { create } from './metrics/backstage';
 
-// The Glean web entry exposes initialize but not the standalone
-// ConfigurationInterface; derive it from the parameter signature.
 type GleanConfig = NonNullable<Parameters<typeof Glean.initialize>[2]>;
 
 interface DebugConfig extends JsonObject {
@@ -41,9 +39,7 @@ export class GleanAnalytics implements AnalyticsApi {
   static fromConfig(config: ConfigApi): GleanAnalytics {
     const appId = config.getString('app.analytics.glean.appId');
     const enabled = config.getBoolean('app.analytics.glean.enabled');
-    const debug = config.getOptional(
-      'app.analytics.glean.debug',
-    ) as DebugConfig;
+    const debug = config.getOptional<DebugConfig>('app.analytics.glean.debug');
     const environment = config.getString('app.analytics.glean.environment');
 
     return new GleanAnalytics(
@@ -81,16 +77,24 @@ export class GleanAnalytics implements AnalyticsApi {
           time_saved: event.value,
         });
         break;
-
       default:
         break;
     }
   }
 }
 
-export const createGleanApiFactory: () => AnyApiFactory = () =>
-  createApiFactory({
-    api: analyticsApiRef,
-    deps: { configApi: configApiRef },
-    factory: ({ configApi }) => GleanAnalytics.fromConfig(configApi),
-  });
+const gleanAnalytics = AnalyticsImplementationBlueprint.make({
+  name: 'glean',
+  params: defineParams =>
+    defineParams({
+      deps: { configApi: configApiRef },
+      factory: ({ configApi }) => GleanAnalytics.fromConfig(configApi),
+    }),
+});
+
+export const gleanPlugin = createFrontendPlugin({
+  pluginId: 'glean',
+  extensions: [gleanAnalytics],
+});
+
+export default gleanPlugin;
