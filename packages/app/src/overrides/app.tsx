@@ -14,6 +14,7 @@ import { NavContentBlueprint } from '@backstage/plugin-app-react';
 import {
   SignInPageBlueprint,
   ThemeBlueprint,
+  IconBundleBlueprint,
 } from '@backstage/plugin-app-react';
 import { UnifiedThemeProvider } from '@backstage/theme';
 import LightIcon from '@material-ui/icons/WbSunny';
@@ -21,6 +22,7 @@ import DarkIcon from '@material-ui/icons/Brightness2';
 import { Sidebar } from '../components/Root';
 import { scmAuthApi, scmIntegrationsApi } from '../apis';
 import { mozillaDarkTheme, mozillaLightTheme } from '../theme/mozilla';
+import { GitHubIcon, DawgIcon } from '../components/icons';
 
 const signInPageExtension = SignInPageBlueprint.make({
   params: {
@@ -33,6 +35,16 @@ const signInPageExtension = SignInPageBlueprint.make({
       return <ProxiedSignInPage {...props} provider="gcpIap" />;
     },
   },
+});
+
+const mozcloudIcons = IconBundleBlueprint.make({
+  name: 'mozcloud',
+  params: {
+    icons: {
+      github: GitHubIcon,
+      dawg: DawgIcon,
+    }
+  }
 });
 
 const sidebarExtension = NavContentBlueprint.make({
@@ -95,5 +107,6 @@ export const appModule = createFrontendModule({
     oauthRequestDialogElement,
     lightThemeExtension,
     darkThemeExtension,
+    mozcloudIcons,
   ],
 });
