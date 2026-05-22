@@ -2,7 +2,6 @@ import { useApi, useRouteRef } from '@backstage/core-plugin-api';
 import {
   CatalogApi,
   catalogApiRef,
-  EntityInfoCard,
   entityPresentationSnapshot,
   getEntityRelations,
   useEntity,
@@ -14,38 +13,21 @@ import {
   RELATION_PARENT_OF,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
-import { Link, Progress, ResponseErrorPanel } from '@backstage/core-components';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import {
-  Box,
+  Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  Flex,
   Grid,
-  Switch,
-  Typography,
-  makeStyles,
-} from '@material-ui/core';
-import { useMemo, useState } from 'react';
+  Skeleton,
+  Text,
+} from '@backstage/ui';
+import { useMemo } from 'react';
 import useAsync from 'react-use/lib/useAsync';
 
-const useStyles = makeStyles(theme => ({
-  tile: {
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: 4,
-    padding: theme.spacing(2),
-    textAlign: 'center' as const,
-    height: '100%',
-  },
-  count: {
-    fontWeight: 700,
-  },
-  empty: {
-    color: theme.palette.text.secondary,
-    fontStyle: 'italic' as const,
-  },
-}));
-
 interface Props {
-  relationAggregation?: 'direct' | 'aggregated';
-  hideRelationsToggle?: boolean;
   entityFilterKind?: string[];
   entityLimit?: number;
 }
@@ -66,21 +48,32 @@ interface Counter {
  * usually assigned to the parent workgroup (`fxa`), so the stock walker
  * misses everything owned by the parent.
  *
- * This override extends the user-side walker to also include each
- * direct group's ancestors (via `RELATION_CHILD_OF`) when computing
- * the owners list. For Group entities we keep the same DOWN-walk via
- * `RELATION_PARENT_OF` as the original.
+ * This override:
+ *   - For Users: walks UP each direct group's ancestors via
+ *     `RELATION_CHILD_OF` so parent-workgroup ownership shows up on a
+ *     user's profile page.
+ *   - For parent Group (`spec.type: workgroup`): walks DOWN via
+ *     `RELATION_PARENT_OF` collecting subgroup descendants. Mirrors the
+ *     stock org plugin's group-aggregation behavior.
+ *   - For subgroup Group (`spec.type: workgroup-subgroup`): walks UP
+ *     via `RELATION_CHILD_OF` to include the parent workgroup as an
+ *     owner, so the Ownership card on `fxa-developers` surfaces things
+ *     owned by `fxa` itself.
  */
 export const WorkgroupOwnershipCard = (props: Props) => {
-  const classes = useStyles();
   const { entity } = useEntity();
   const catalogApi = useApi(catalogApiRef);
   const catalogLink = useRouteRef(catalogPlugin.routes.catalogIndex);
 
-  const defaultAggregation = entity.kind === 'User' ? 'aggregated' : 'direct';
-  const [aggregation, setAggregation] = useState(
-    props.relationAggregation ?? defaultAggregation,
-  );
+  // Users and subgroups walk OUT to surface anything owned by their
+  // groups / parent workgroup. Parent workgroups stay direct since they
+  // typically own things in their own right. The toggle is intentionally
+  // gone — direct mode on a subgroup almost always renders empty and was
+  // more confusing than useful.
+  const isSubgroup =
+    entity.kind === 'Group' &&
+    (entity.spec as { type?: string } | undefined)?.type ===
+      'workgroup-subgroup';
   const kinds = useMemo(
     () =>
       props.entityFilterKind ?? ['Component', 'API', 'System', 'Resource'],
@@ -89,7 +82,7 @@ export const WorkgroupOwnershipCard = (props: Props) => {
   const entityLimit = props.entityLimit ?? 6;
 
   const { loading, error, value: counters } = useAsync(async () => {
-    const owners = await getOwners(entity, aggregation, catalogApi);
+    const owners = await getOwners(entity, catalogApi);
     if (owners.length === 0) return [];
     const owned = await batchGetOwnedEntitiesByOwners(
       owners,
@@ -97,66 +90,74 @@ export const WorkgroupOwnershipCard = (props: Props) => {
       catalogApi,
     );
     return reduceToCounters(owned, owners, entityLimit);
-  }, [catalogApi, entity, aggregation, kinds, entityLimit]);
-
-  const toggle = !props.hideRelationsToggle && (
-    <Switch
-      checked={aggregation !== 'direct'}
-      onChange={(_, checked) =>
-        setAggregation(checked ? 'aggregated' : 'direct')
-      }
-    />
-  );
+  }, [catalogApi, entity, kinds, entityLimit]);
 
   return (
-    <EntityInfoCard title="Ownership" headerActions={toggle}>
-      {loading && <Progress />}
-      {error && <ResponseErrorPanel error={error} />}
-      {!loading && !error && (!counters || counters.length === 0) && (
-        <Typography className={classes.empty}>Nothing owned.</Typography>
-      )}
-      {counters && counters.length > 0 && (
-        <Grid container spacing={2}>
-          {counters.map(c => {
-            const url = catalogLink ? `${catalogLink()}?${c.query}` : undefined;
-            const tile = (
-              <Box className={classes.tile}>
-                <Typography variant="h6" className={classes.count}>
-                  {c.count}
-                </Typography>
-                <Typography variant="subtitle2">
-                  {(c.type ?? c.kind).toUpperCase()}
-                </Typography>
-                {c.type && (
-                  <Typography variant="caption">{c.kind}</Typography>
-                )}
-              </Box>
-            );
-            return (
-              <Grid key={`${c.kind}:${c.type ?? ''}`} item xs={6} md={4}>
-                {url ? <Link to={url}>{tile}</Link> : tile}
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
-    </EntityInfoCard>
+    <Card>
+      <CardHeader>
+        <Text variant="title-medium" weight="bold">
+          Ownership
+        </Text>
+      </CardHeader>
+      <CardBody>
+        {loading && <Skeleton />}
+        {error && (
+          <Alert status="danger" title="Failed to load ownership" description={error.message} />
+        )}
+        {!loading && !error && (!counters || counters.length === 0) && (
+          <Text color="secondary">Nothing owned.</Text>
+        )}
+        {counters && counters.length > 0 && (
+          <Grid.Root columns={{ initial: '2', md: '3' }} gap="3">
+            {counters.map(c => {
+              const url = catalogLink
+                ? `${catalogLink()}?${c.query}`
+                : undefined;
+              const label = `Browse ${c.kind.toLowerCase()} owned by this entity`;
+              const body = (
+                <Flex direction="column" align="center" gap="1">
+                  <Text variant="title-large" weight="bold">
+                    {c.count}
+                  </Text>
+                  <Text variant="body-small" weight="bold">
+                    {(c.type ?? c.kind).toUpperCase()}
+                  </Text>
+                  {c.type && (
+                    <Text variant="body-x-small" color="secondary">
+                      {c.kind}
+                    </Text>
+                  )}
+                </Flex>
+              );
+              return url ? (
+                <Card
+                  key={`${c.kind}:${c.type ?? ''}`}
+                  href={url}
+                  label={label}
+                >
+                  {body}
+                </Card>
+              ) : (
+                <Card key={`${c.kind}:${c.type ?? ''}`}>{body}</Card>
+              );
+            })}
+          </Grid.Root>
+        )}
+      </CardBody>
+    </Card>
   );
 };
 
 async function getOwners(
   entity: Entity,
-  aggregation: 'direct' | 'aggregated',
   catalogApi: CatalogApi,
 ): Promise<string[]> {
-  if (aggregation !== 'aggregated') {
-    return [stringifyEntityRef(entity)];
-  }
+  const type = (entity.spec as { type?: string } | undefined)?.type;
   if (entity.kind === 'User') {
     return getUserOwnersWithAncestors(entity, catalogApi);
   }
-  if (entity.kind === 'Group') {
-    return getGroupDescendantRefs(entity, catalogApi);
+  if (entity.kind === 'Group' && type === 'workgroup-subgroup') {  
+    return getGroupAncestorRefs(entity, catalogApi)
   }
   return [stringifyEntityRef(entity)];
 }
@@ -205,10 +206,11 @@ async function getUserOwnersWithAncestors(
 }
 
 /**
- * Group aggregated mode: walk DOWN via `RELATION_PARENT_OF` collecting
- * every descendant group. Mirrors the org plugin's behavior.
+ * Subgroup aggregated mode: walk UP via `RELATION_CHILD_OF` collecting
+ * the subgroup itself plus every ancestor. Lets things owned by the
+ * parent workgroup surface on a subgroup's Ownership card.
  */
-async function getGroupDescendantRefs(
+async function getGroupAncestorRefs(
   group: Entity,
   catalogApi: CatalogApi,
 ): Promise<string[]> {
@@ -223,13 +225,13 @@ async function getGroupDescendantRefs(
     });
     for (const g of items) {
       if (!g) continue;
-      const children = getEntityRelations(g, RELATION_PARENT_OF, {
+      const parents = getEntityRelations(g, RELATION_CHILD_OF, {
         kind: 'Group',
       }).map(r => stringifyEntityRef(r));
-      for (const c of children) {
-        if (owners.has(c)) continue;
-        owners.add(c);
-        frontier.push(c);
+      for (const p of parents) {
+        if (owners.has(p)) continue;
+        owners.add(p);
+        frontier.push(p);
       }
     }
   }
