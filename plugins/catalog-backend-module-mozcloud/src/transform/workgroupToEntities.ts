@@ -1,6 +1,32 @@
-import { Entity } from '@backstage/catalog-model';
+import { Entity, EntityLink } from '@backstage/catalog-model';
 import { Subgroup, WorkgroupRow } from './schema';
-import { crossWorkgroupRef, pickDefined, subgroupName } from './refs';
+import { crossWorkgroupRef, pickDefined, subgroupName, workgroupRef } from './refs';
+
+const WORKGROUPS_REPO = 'mozilla/global-platform-admin';
+const WORKGROUPS_PATH = 'google-workspace-management/tf/workgroups';
+const DAWG_BASE = 'https://protosaur.dev/dawg/workgroup';
+
+/** Source-location URL for a workgroup's YAML in the upstream repo. */
+function workgroupSourceLocation(workgroup: string): string {
+  return `url:https://github.com/${WORKGROUPS_REPO}/blob/main/${WORKGROUPS_PATH}/${workgroup}.yaml`;
+}
+
+/** DAWG (Domain Access Workgroup Governance) page for a workgroup. */
+function dawgUrl(workgroup: string, subgroup?: string): string {
+  const base = `${DAWG_BASE}/${workgroup}`;
+  return subgroup ? `${base}#${subgroup}` : base;
+}
+
+/**
+ * External links for a workgroup or subgroup. Takes the same positional
+ * args as {@link dawgUrl} so the caller does the unpacking.
+ */
+function workgroupLinks(workgroup: string, subgroup?: string): EntityLink[] {
+  return [
+    { url: dawgUrl(workgroup, subgroup), title: 'View on DAWG', icon: "dawg" },
+    { url: workgroupSourceLocation(workgroup), title: 'View source on Github', icon: 'github' },
+  ];
+}
 
 /**
  * Pure transform: a single workgroup row -> the Group entities that
@@ -39,10 +65,15 @@ export function workgroupToEntities(
       name: parentName,
       namespace: 'workgroups',
       annotations: baseAnn({
+        // Link Group entity pages back to the canonical workgroup YAML
+        // upstream (BackstageHeader picks this up for the "View source"
+        // affordance via the AboutCard / EntityLinksCard).
+        'backstage.io/source-location': workgroupSourceLocation(wg.workgroup),
         'mozilla.org/sponsor': wg.sponsor,
         'mozilla.org/tickets': wg.tickets.join(','),
         'mozilla.org/managers': wg.managers.join(','),
       }),
+      links: workgroupLinks(wg.workgroup),
     },
     spec: {
       type: 'workgroup',
@@ -59,7 +90,10 @@ export function workgroupToEntities(
   return entities;
 }
 
-function subgroupToEntity(sub: Subgroup, locationRef: string): Entity {
+function subgroupToEntity(
+  sub: Subgroup,
+  locationRef: string,
+): Entity {
   const name = subgroupName(sub.parent, sub.name);
   // Cross-workgroup composition lives only in the annotation, not in
   // any spec field that the catalog processor turns into a relation.
@@ -84,21 +118,26 @@ function subgroupToEntity(sub: Subgroup, locationRef: string): Entity {
       annotations: pickDefined({
         'backstage.io/managed-by-location': locationRef,
         'backstage.io/managed-by-origin-location': locationRef,
+        // Subgroups are defined inline within the parent workgroup's
+        // YAML, so they share the same source-location.
+        'backstage.io/source-location': workgroupSourceLocation(sub.parent),
         'mozilla.org/composed-from': composedFrom.join(','),
         'mozilla.org/google-groups':
           (sub.google_groups ?? []).join(',') || undefined,
         'mozilla.org/service-accounts':
           (sub.service_accounts ?? []).join(',') || undefined,
+        'mozilla.org/iam-principals':
+          (sub.members ?? []).join(',') || undefined,
       }),
+      links: workgroupLinks(sub.parent, sub.name),
     },
     spec: {
       type: 'workgroup-subgroup',
       profile: { displayName: `${sub.parent} / ${sub.name}` },
       parent: `workgroups/${sub.parent}`,
-      children: [],
+      children: (sub.workgroups ?? []).map(workgroupRef),
       // `spec.members` is populated by the provider from the users
-      // source — keep this empty so the old (now incorrect) behavior
-      // of treating `sub.members` as user emails is gone.
+      // this should only contain subgroups that are members of the subgroup.
       members: [],
     },
   };

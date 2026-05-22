@@ -78,13 +78,99 @@ describe('workgroupToEntities', () => {
     });
 
     it('keeps subgroup children empty and exposes cross-workgroup composition via annotation only', () => {
+      // Cross-workgroup composition refs are recorded in the
+      // `mozilla.org/composed-from` annotation instead of `spec.children`
+      // so the Backstage catalog processor doesn't emit `parentOf`
+      // relations for them. That keeps stock member-aggregation walkers
+      // (`@backstage/plugin-org`'s MembersListCard "Include subgroups")
+      // from descending into workgroups we've merely borrowed access
+      // from when computing a parent workgroup's transitive members.
       const admins = byKind('Group').find(
         g => g.metadata.name === 'backstage-admins',
       )!;
-      expect((admins.spec as { children?: string[] }).children).toEqual([]);
+      // Subgroups now expose their cross-workgroup composition via
+      // `spec.children` (resolves into proper Group relations) AND via
+      // the annotation (for the legacy "composed-from" card).
+      expect((admins.spec as { children?: string[] }).children).toEqual([
+        'group:workgroups/sre-admins',
+      ]);
       expect(admins.metadata.annotations?.['mozilla.org/composed-from']).toBe(
         'group:workgroups/sre-admins',
       );
+
+      const iap = byKind('Group').find(
+        g => g.metadata.name === 'backstage-iap-access',
+      )!;
+      expect((iap.spec as { children?: string[] }).children).toEqual([
+        'group:workgroups/backstage-admins',
+        'group:workgroups/backstage-developers',
+        'group:workgroups/backstage-viewers',
+      ]);
+      expect(iap.metadata.annotations?.['mozilla.org/composed-from']).toBe(
+        [
+          'group:workgroups/backstage-admins',
+          'group:workgroups/backstage-developers',
+          'group:workgroups/backstage-viewers',
+        ].join(','),
+      );
+    });
+
+    it('annotates the parent Group with a source-location pointing at the workgroup YAML', () => {
+      const parent = byKind('Group').find(
+        g => g.metadata.name === 'backstage',
+      )!;
+      expect(
+        parent.metadata.annotations?.['backstage.io/source-location'],
+      ).toBe(
+        'url:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/backstage.yaml',
+      );
+    });
+
+    it('annotates each subgroup with the same source-location as the parent (subgroups are inlined in the YAML)', () => {
+      const subgroup = byKind('Group').find(
+        g => g.metadata.name === 'backstage-admins',
+      )!;
+      expect(
+        subgroup.metadata.annotations?.['backstage.io/source-location'],
+      ).toBe(
+        'url:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/backstage.yaml',
+      );
+    });
+
+    it('adds a DAWG link and a source-location link on the parent Group', () => {
+      const parent = byKind('Group').find(
+        g => g.metadata.name === 'backstage',
+      )!;
+      expect(parent.metadata.links).toEqual([
+        {
+          url: 'https://protosaur.dev/dawg/workgroup/backstage',
+          title: 'View on DAWG',
+          icon: 'dawg',
+        },
+        {
+          url: 'url:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/backstage.yaml',
+          title: 'View source on Github',
+          icon: 'github',
+        },
+      ]);
+    });
+
+    it('adds a DAWG link on each subgroup with a hash anchor for the subgroup', () => {
+      const subgroup = byKind('Group').find(
+        g => g.metadata.name === 'backstage-admins',
+      )!;
+      expect(subgroup.metadata.links).toEqual([
+        {
+          url: 'https://protosaur.dev/dawg/workgroup/backstage#admins',
+          title: 'View on DAWG',
+          icon: 'dawg',
+        },
+        {
+          url: 'url:https://github.com/mozilla/global-platform-admin/blob/main/google-workspace-management/tf/workgroups/backstage.yaml',
+          title: 'View source on Github',
+          icon: 'github',
+        },
+      ]);
     });
 
     it('emits no User entities (no members on this workgroup)', () => {
