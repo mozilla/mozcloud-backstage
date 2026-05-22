@@ -54,7 +54,7 @@ const lightThemeExtension = ThemeBlueprint.make({
   params: {
     theme: {
       id: 'light',
-      title: 'Light',
+      title: 'Mozilla Light',
       variant: 'light',
       icon: <LightIcon />,
       Provider: ({ children }) => (
@@ -69,7 +69,7 @@ const darkThemeExtension = ThemeBlueprint.make({
   params: {
     theme: {
       id: 'dark',
-      title: 'Dark',
+      title: 'Mozilla Dark',
       variant: 'dark',
       icon: <DarkIcon />,
       Provider: ({ children }) => (
