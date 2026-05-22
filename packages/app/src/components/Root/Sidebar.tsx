@@ -1,7 +1,5 @@
 import HomeIcon from '@material-ui/icons/Home';
 import CategoryIcon from '@material-ui/icons/Category';
-import LibraryBooks from '@material-ui/icons/LibraryBooks';
-import CreateComponentIcon from '@material-ui/icons/AddCircleOutline';
 import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
 import GroupIcon from '@material-ui/icons/People';
@@ -36,8 +34,8 @@ export const Sidebar = () => (
         pluralTitle="My Groups"
         icon={GroupIcon}
       />
-      <SidebarItem icon={LibraryBooks} to="docs" text="Docs" />
-      <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />
+      {/* <SidebarItem icon={LibraryBooks} to="docs" text="Docs" /> */}
+      {/* <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." /> */}
       <SidebarDivider />
       <SidebarScrollWrapper />
     </SidebarGroup>

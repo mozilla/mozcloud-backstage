@@ -22,12 +22,15 @@ app:
     - app-root-element:home/visit-listener: true
     - entity-content:catalog/diagram: false
 
+    - entity-card:catalog/links:
+        config:
+          type: content
+
     # Default the Group "Members" card to aggregated view so subgroup
     # members appear without having to toggle. The toggle remains
     # available for switching back to direct-only.
     - entity-card:org/members-list:
-        config:
-          initialRelationAggregation: aggregated
+        config: {}
 
     # Hide stock catalog relation cards (Depends on..., Has...) when the
     # entity has no relations of that type. Defaults only gate on `kind`,
