@@ -11,11 +11,17 @@ import {
   normalizeTenantRow,
 } from './sources/BigQuerySource';
 import {
+  chartsDeploymentsQuery,
+  chartsDeploymentsSourceDescription,
   tenantsQuery,
   workgroupsQuery,
   workgroupsSourceDescription,
 } from './queries';
-import { TenantRowSchema, WorkgroupRowSchema } from './transform/schema';
+import {
+  ChartDeploymentsRowSchema,
+  TenantRowSchema,
+  WorkgroupRowSchema,
+} from './transform/schema';
 
 const DEFAULT_SCHEDULE = {
   frequency: { minutes: 30 },
@@ -72,12 +78,43 @@ export const catalogModuleMozcloud = createBackendModule({
             normalize: normalizeTenantRow,
             logger,
           });
+
+          // Optional second source: actual deployment tree per chart.
+          // The tenant provider correlates rows by (tenant, chart_name)
+          // and enriches the corresponding chart Components.
+          const chartsCfg = root.getOptionalConfig('charts');
+          let chartsSource;
+          if (chartsCfg) {
+            const chartsBq = chartsCfg.getConfig('bigquery').get<{
+              project: string;
+              dataset: string;
+              tenantsTable?: string;
+              deployedChartsTable?: string;
+              billingProject?: string;
+            }>();
+            chartsSource = defineBigQuerySource({
+              query: chartsDeploymentsQuery(chartsBq),
+              schema: ChartDeploymentsRowSchema,
+              description: chartsDeploymentsSourceDescription(chartsBq),
+              billingProject: chartsBq.billingProject,
+              dataProject: chartsBq.project,
+              logger,
+            });
+          }
+
           const taskRunner = scheduler.createScheduledTaskRunner(schedule);
           catalog.addEntityProvider(
-            new MozcloudTenantEntityProvider(source, logger, taskRunner),
+            new MozcloudTenantEntityProvider(
+              source,
+              logger,
+              taskRunner,
+              chartsSource,
+            ),
           );
           logger.info(
-            `Registered mozcloud tenant provider (source: ${source.description})`,
+            `Registered mozcloud tenant provider (tenants: ${source.description}${
+              chartsSource ? `, charts: ${chartsSource.description}` : ''
+            })`,
           );
         }
 

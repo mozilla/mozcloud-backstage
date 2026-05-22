@@ -85,17 +85,18 @@ describe('MozcloudTenantEntityProvider', () => {
         }`,
     );
 
-    // 1 dedup'd Domain + 2 Systems + 2 Components + 1 Resource (TENANT_A's prod realm)
+    // With no chartsSource configured, only tenant-level entities are emitted:
+    // 1 dedup'd Domain + 2 Systems + 1 Resource (TENANT_A's prod realm).
+    // Chart Components are emitted by chartToEntities, exercised separately.
     expect(refs).toEqual(
       expect.arrayContaining([
         'domain:default/webservices',
         'system:default/service-a',
         'system:default/service-b',
-        'component:default/service-a',
-        'component:default/service-b',
         'resource:default/moz-fx-a-prod',
       ]),
     );
+    expect(refs.filter(r => r.startsWith('component:'))).toHaveLength(0);
 
     // The webservices Domain must appear exactly once despite two tenants
     // emitting it (the workgroup `team-x` is no longer emitted by this

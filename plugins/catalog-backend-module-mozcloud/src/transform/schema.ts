@@ -103,3 +103,49 @@ export const WorkgroupRowSchema = z
 
 export type WorkgroupRow = z.infer<typeof WorkgroupRowSchema>;
 export type Subgroup = z.infer<typeof SubgroupSchema>;
+
+/**
+ * Row shape returned by `chartsDeploymentsQuery`. One row per
+ * `(tenant, chart_name)` combining the chart's declared image refs from
+ * `tenants.globals.deployment.charts[]` with the flat deployment facts
+ * from `tenants_deployed_charts` (one entry per realm/environment/region
+ * the chart is deployed to).
+ */
+const ChartImageSchema = z
+  .object({
+    auto_update: z.boolean().optional(),
+    image_name: z.string().optional(),
+    image_regex: z.string().optional(),
+    image_repository: z.string().optional(),
+    image_tag: z.string().optional(),
+    name: z.string().optional(),
+  })
+  .passthrough();
+
+const ChartDeploymentSchema = z
+  .object({
+    realm: z.string().optional(),
+    environment: z.string().optional(),
+    region: z.string().optional(),
+    chart_name: z.string().optional(),
+  })
+  .passthrough();
+
+export const ChartDeploymentsRowSchema = z
+  .object({
+    tenant: z.string(),
+    chart_name: z.string(),
+    chart_count: z.number().int().nonnegative(),
+    function: z.string(),
+    workgroups: z.array(z.string()).default([]),
+    deployment_type: z.enum(['argocd', 'gha']).nullable().optional(),
+    application_repository: z.string().nullable().optional(),
+    release_name: z.string().nullable().optional(),
+    images: z.array(ChartImageSchema).default([]),
+    deployments: z.array(ChartDeploymentSchema).default([]),
+  })
+  .passthrough();
+
+export type ChartDeploymentsRow = z.infer<typeof ChartDeploymentsRowSchema>;
+export type ChartImage = z.infer<typeof ChartImageSchema>;
+export type ChartDeployment = z.infer<typeof ChartDeploymentSchema>;

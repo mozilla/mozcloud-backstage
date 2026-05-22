@@ -1,7 +1,6 @@
 import { Entity } from '@backstage/catalog-model';
 import { TenantRow } from './schema';
 import {
-  chartComponentName,
   pickDefined,
   tenantOwner,
   workgroupRef,
@@ -9,35 +8,10 @@ import {
 } from './refs';
 
 const TENANTS_REPO = 'mozilla/global-platform-admin';
-const DEFAULT_REGION = 'us-west1';
 
 /** Build the source-location URL for a tenant's YAML in the upstream repo. */
 function tenantSourceLocation(appCode: string): string {
   return `url:https://github.com/${TENANTS_REPO}/blob/main/tenants/${appCode}.yaml`;
-}
-
-/** All regions a chart in `additional_regions` deploys to (us-west1 is default). */
-function chartRegions(tenant: TenantRow): string[] {
-  const additional = (tenant.globals as { additional_regions?: string[] })
-    .additional_regions;
-  return [DEFAULT_REGION, ...(additional ?? [])];
-}
-
-/**
- * ArgoCD app URL for a deployment instance, per the Mozilla convention:
- *   https://<function>.argocd.global.mozgcp.net/applications/argocd-<function>/
- *     <app_code>-<env>-<region>-<chart>?view=tree&resource=
- */
-function argoCdUrl(args: {
-  fn: string;
-  appCode: string;
-  chartName: string;
-  envName: string;
-  region: string;
-}): string {
-  const { fn, appCode, chartName, envName, region } = args;
-  const app = `${appCode}-${envName}-${region}-${chartName}`;
-  return `https://${fn}.argocd.global.mozgcp.net/applications/argocd-${fn}/${app}?view=tree&resource=`;
 }
 
 /**
@@ -47,11 +21,11 @@ function argoCdUrl(args: {
  * Emits:
  *   - 1 Domain (the tenant's function — webservices/dataservices/sandbox/etc.)
  *   - 1 System (the tenant)
- *   - 1 Component per chart in globals.deployment.charts
- *   - 1 Component (helm-deployment) per chart × realm × environment, when
- *     deployment.type is `argocd`. Carries ArgoCD URLs as annotations.
  *   - 1 Resource per realm with a project_id (gcp-project)
  *   - 1 Resource per entry in globals.entitlements.additional_entitlements
+ *
+ * Chart Components (helm charts + helm-deployments) are NOT emitted here —
+ * the `chartToEntities` transform owns those, fed by `chartsDeploymentsQuery`.
  *
  * Workgroup-namespaced Group entities are NOT emitted here — the
  * MozcloudWorkgroupEntityProvider owns that namespace.
@@ -103,98 +77,6 @@ export function tenantToEntities(
     spec: { owner, domain: tenant.globals.function },
   });
 
-  const charts = Object.entries(tenant.globals.deployment?.charts ?? {});
-  const deploymentType = tenant.globals.deployment?.type;
-  const regions = chartRegions(tenant);
-
-  for (const [chartName, chart] of charts) {
-    const githubSlug = chart.application_repository;
-    const componentName = chartName;
-    const images = (
-      chart as { images?: Record<string, { auto_update?: boolean }> }
-    ).images;
-    const autoUpdate = images
-      ? Object.values(images).some(img => img?.auto_update)
-      : undefined;
-
-    // Helm chart
-    entities.push({
-      apiVersion: 'backstage.io/v1alpha1',
-      kind: 'Component',
-      metadata: {
-        name: componentName,
-        annotations: baseAnn({
-          'github.com/project-slug': githubSlug,
-          'backstage.io/source-location': githubSlug
-            ? `url:https://github.com/${githubSlug}/`
-            : undefined,
-          'mozilla.org/deployment-type': deploymentType,
-          'mozilla.org/chart-name': chartName,
-          'mozilla.org/release-name': (chart as { release_name?: string })
-            .release_name,
-          'mozilla.org/target-revision': (chart as { target_revision?: string })
-            .target_revision,
-          'mozilla.org/auto-update':
-            autoUpdate === undefined ? undefined : String(autoUpdate),
-          'mozilla.org/image-aliases': images
-            ? Object.keys(images).join(',') || undefined
-            : undefined,
-        }),
-      },
-      spec: {
-        type: 'service',
-        lifecycle: 'production',
-        owner,
-        system: sysName,
-      },
-    });
-
-    // Deployment sub-Components: only meaningful for argocd deployments,
-    // since the URL convention is ArgoCD-specific.
-    if (deploymentType !== 'argocd') continue;
-
-    for (const [realmName, realm] of Object.entries(tenant.realms ?? {})) {
-      for (const env of realm?.environments ?? []) {
-        if (!env?.name) continue;
-        const argoUrls = regions.map(region => ({
-          region,
-          url: argoCdUrl({
-            fn,
-            appCode: sysName,
-            chartName,
-            envName: env.name,
-            region,
-          }),
-        }));
-        entities.push({
-          apiVersion: 'backstage.io/v1alpha1',
-          kind: 'Component',
-          metadata: {
-            name: `${componentName}-${env.name}`,
-            annotations: baseAnn({
-              'mozilla.org/realm': realmName,
-              'mozilla.org/environment': env.name,
-              'mozilla.org/regions': regions.join(','),
-              'mozilla.org/chart-name': chartName,
-              // The card looks for these argocd-* annotations to render
-              // one link per region. Joined into a single annotation
-              // value because Backstage annotations are scalar.
-              'mozilla.org/argocd-urls': argoUrls
-                .map(({ region, url }) => `${region}=${url}`)
-                .join('|'),
-            }),
-          },
-          spec: {
-            type: 'helm-deployment',
-            lifecycle: 'production',
-            owner,
-            subcomponentOf: componentName,
-          },
-        });
-      }
-    }
-  }
-
   for (const [realmName, realm] of Object.entries(tenant.realms ?? {})) {
     if (!realm?.project_id) continue;
     entities.push({
@@ -226,6 +108,7 @@ export function tenantToEntities(
         type: 'gcp-entitlement',
         owner,
         system: sysName,
+        // TODO add part of ref to prod realm project id or nonprod if prod is not present
         dependsOn: ent.principals.map(workgroupRef),
       },
     });

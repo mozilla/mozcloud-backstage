@@ -22,11 +22,13 @@ describe('tenantToEntities', () => {
     const entities = tenantToEntities(tenant, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
-    it('emits a Domain for the tenant function', () => {
+    it('emits a Domain for the tenant function owned by the platform workgroup', () => {
       const domains = byKind('Domain');
       expect(domains).toHaveLength(1);
       expect(domains[0].metadata.name).toBe('webservices');
-      expect(domains[0].spec).toMatchObject({ owner: 'group:default/unowned' });
+      expect(domains[0].spec).toMatchObject({
+        owner: 'group:workgroups/platform',
+      });
     });
 
     it('emits one System with workgroup-namespaced owner', () => {
@@ -40,64 +42,12 @@ describe('tenantToEntities', () => {
       expect(systems[0].metadata.tags).toEqual(['webservices', 'risk-high']);
     });
 
-    it('emits one Component for the chart (named after the app_code, single-chart)', () => {
-      const chartComponents = byKind('Component').filter(
-        c => (c.spec as { type?: string }).type === 'service',
-      );
-      expect(chartComponents).toHaveLength(1);
-      expect(chartComponents[0].metadata.name).toBe('backstage');
-      expect(
-        chartComponents[0].metadata.annotations?.['github.com/project-slug'],
-      ).toBe('mozilla-services/moz-backstage-app');
-      expect(chartComponents[0].spec).toMatchObject({
-        type: 'service',
-        system: 'backstage',
-        owner: 'group:workgroups/backstage',
-      });
-    });
-
-    it('annotates the chart Component with chart metadata', () => {
-      const chart = byKind('Component').find(
-        c => c.metadata.name === 'backstage',
-      )!;
-      const ann = chart.metadata.annotations ?? {};
-      expect(ann['mozilla.org/chart-name']).toBe('backstage');
-      expect(ann['mozilla.org/deployment-type']).toBe('argocd');
-      expect(ann['mozilla.org/auto-update']).toBe('true');
-      expect(ann['mozilla.org/image-aliases']).toBe('moz-backstage-app');
-    });
-
-    it('emits one helm-deployment sub-Component per chart x realm x env', () => {
-      const deployments = byKind('Component').filter(
-        c => (c.spec as { type?: string }).type === 'helm-deployment',
-      );
-      // backstage has 1 chart, 2 realms, 1 env each -> 2 sub-components
-      expect(deployments.map(d => d.metadata.name).sort()).toEqual([
-        'backstage-prod',
-        'backstage-stage',
-      ]);
-      const stage = deployments.find(
-        d => d.metadata.name === 'backstage-stage',
-      )!;
-      expect(stage.spec).toMatchObject({
-        type: 'helm-deployment',
-        subcomponentOf: 'backstage',
-        system: 'backstage',
-      });
-      const ann = stage.metadata.annotations ?? {};
-      expect(ann['mozilla.org/realm']).toBe('nonprod');
-      expect(ann['mozilla.org/environment']).toBe('stage');
-      expect(ann['mozilla.org/argocd-urls']).toContain(
-        'us-west1=https://webservices.argocd.global.mozgcp.net/applications/argocd-webservices/backstage-stage-us-west1-backstage?view=tree&resource=',
-      );
-    });
-
     it('annotates Systems with backstage.io/source-location pointing at the tenant YAML', () => {
       const system = byKind('System')[0];
       expect(
         system.metadata.annotations?.['backstage.io/source-location'],
       ).toBe(
-        'url:https://github.com/mozilla-services/global-platform-admin/blob/main/tenants/backstage.yaml',
+        'url:https://github.com/mozilla/global-platform-admin/blob/main/tenants/backstage.yaml',
       );
     });
 
@@ -126,11 +76,8 @@ describe('tenantToEntities', () => {
       expect(byKind('Group')).toHaveLength(0);
     });
 
-    it('annotates Components with backstage.io/source-location', () => {
-      const components = byKind('Component');
-      expect(
-        components[0].metadata.annotations?.['backstage.io/source-location'],
-      ).toBe('url:https://github.com/mozilla-services/moz-backstage-app/');
+    it('does not emit Component entities (chartToEntities owns those)', () => {
+      expect(byKind('Component')).toHaveLength(0);
     });
 
     it('does not emit any entitlement Resources for tenants without entitlements', () => {
@@ -138,44 +85,6 @@ describe('tenantToEntities', () => {
         r => (r.spec as { type?: string }).type === 'gcp-entitlement',
       );
       expect(entResources).toHaveLength(0);
-    });
-  });
-
-  describe('multi-chart tenant (socorro)', () => {
-    const tenant = loadFixture('socorro');
-    const entities = tenantToEntities(tenant, FIXTURE_LOCATION);
-
-    it('emits one Component per chart with suffixed names', () => {
-      const chartComponents = entities
-        .filter(e => e.kind === 'Component')
-        .filter(c => (c.spec as { type?: string }).type === 'service');
-      expect(chartComponents.map(c => c.metadata.name).sort()).toEqual([
-        'socorro-antenna',
-        'socorro-socorro',
-      ]);
-    });
-
-    it('preserves the application_repository annotation per chart', () => {
-      const components = entities.filter(e => e.kind === 'Component');
-      const antenna = components.find(
-        c => c.metadata.name === 'socorro-antenna',
-      )!;
-      expect(antenna.metadata.annotations?.['github.com/project-slug']).toBe(
-        'mozilla-services/antenna',
-      );
-    });
-
-    it('emits sub-Components for every chart x realm x env combination', () => {
-      const deployments = entities
-        .filter(e => e.kind === 'Component')
-        .filter(c => (c.spec as { type?: string }).type === 'helm-deployment');
-      // socorro: 2 charts x 2 realms x 1 env each = 4 sub-components
-      expect(deployments.map(d => d.metadata.name).sort()).toEqual([
-        'socorro-antenna-prod',
-        'socorro-antenna-stage',
-        'socorro-socorro-prod',
-        'socorro-socorro-stage',
-      ]);
     });
   });
 
@@ -190,14 +99,14 @@ describe('tenantToEntities', () => {
 
     it('emits one Resource per additional_entitlement', () => {
       expect(entResources.map(r => r.metadata.name).sort()).toEqual([
-        'fxa-ent-admin-ent',
-        'fxa-ent-secret-add-access',
+        'fxa-entitlement-admin-ent',
+        'fxa-entitlement-secret-add-access',
       ]);
     });
 
     it('records the principal workgroups via dependsOn', () => {
       const adminEnt = entResources.find(
-        r => r.metadata.name === 'fxa-ent-admin-ent',
+        r => r.metadata.name === 'fxa-entitlement-admin-ent',
       )!;
       expect((adminEnt.spec as { dependsOn?: string[] }).dependsOn).toEqual([
         'group:workgroups/fxa-developers',

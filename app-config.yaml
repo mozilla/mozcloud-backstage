@@ -194,6 +194,17 @@ catalog:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
+      charts:
+        # Joins `tenants.globals.deployment.charts[]` with
+        # `tenants_deployed_charts` to produce one row per (tenant, chart)
+        # carrying the declared chart metadata + the actual deployment
+        # tree (realm -> environments -> regions). Consumed by the
+        # tenant entity provider as a second source to enrich chart
+        # Components with deployment annotations.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+          billingProject: wstuckey-sandbox
       workgroups:
         # JOIN of `wstuckey_workgroups` (sponsor + subgroup names) with
         # `wstuckey_subgroup_members` (flat membership with resolved

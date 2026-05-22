@@ -9,7 +9,8 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { tenantToEntities } from './transform/tenantToEntities';
-import { TenantRow } from './transform/schema';
+import { chartToEntities } from './transform/chartToEntities';
+import { ChartDeploymentsRow, TenantRow } from './transform/schema';
 
 /**
  * Catalog entity provider that turns rows from a {@link Source} (BigQuery
@@ -17,6 +18,12 @@ import { TenantRow } from './transform/schema';
  * mutation per refresh. Full mutations let the catalog engine handle
  * deletes automatically — a tenant removed upstream disappears on the
  * next tick.
+ *
+ * The tenants source produces Domain / System / Resource entities via
+ * {@link tenantToEntities}. The optional {@link ChartDeploymentsRow}
+ * source produces the helm chart Components and helm-deployment
+ * sub-Components via {@link chartToEntities}; each row carries the
+ * tenant metadata it needs so the transform is row-local.
  */
 export class MozcloudTenantEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
@@ -25,6 +32,7 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     private readonly source: Source<TenantRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
+    private readonly chartsSource?: Source<ChartDeploymentsRow>,
   ) {}
 
   getProviderName(): string {
@@ -54,12 +62,23 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       throw new Error('Not initialized');
     }
 
-    const tenants = await this.source.fetchAll();
-    const locationRef = `mozcloud:${this.source.description}`;
+    const [tenants, charts] = await Promise.all([
+      this.source.fetchAll(),
+      this.chartsSource ? this.chartsSource.fetchAll() : Promise.resolve([]),
+    ]);
+
+    const tenantsLocationRef = `mozcloud:${this.source.description}`;
+    const chartsLocationRef = this.chartsSource
+      ? `mozcloud:${this.chartsSource.description}`
+      : tenantsLocationRef;
     const entities: Entity[] = [];
 
     for (const tenant of tenants) {
-      entities.push(...tenantToEntities(tenant, locationRef));
+      entities.push(...tenantToEntities(tenant, tenantsLocationRef));
+    }
+
+    for (const chart of charts) {
+      entities.push(...chartToEntities(chart, chartsLocationRef));
     }
 
     const deduped = dedupeByEntityRef(entities);
@@ -75,7 +94,9 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         deduped.length
-      } entities from ${tenants.length} tenants`,
+      } entities from ${tenants.length} tenants${
+        this.chartsSource ? ` (charts source: ${charts.length} rows)` : ''
+      }`,
     );
   }
 }

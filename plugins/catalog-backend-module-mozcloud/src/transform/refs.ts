@@ -1,4 +1,4 @@
-export const DEFAULT_WG_REF = 'groups:workgroups/platform';
+export const DEFAULT_WG_REF = 'group:workgroups/platform';
 /**
  * Convert a tenant entitlement principal like `workgroup:fxa/developers`
  * into a Backstage entity ref like `group:workgroups/fxa-developers`.
