@@ -80,8 +80,16 @@ export const TenantRowSchema = z
 
 export type TenantRow = z.infer<typeof TenantRowSchema>;
 
+/**
+ * One subgroup as it appears on the workgroups source. Note that
+ * `members` here is **not** a list of user emails — it's the IAM-principal
+ * binding list (`group:…@firefox.gcp.mozilla.com`, `serviceAccount:…`,
+ * etc.) that GCP grants access through. Human members live in the
+ * separate users source ({@link UserRowSchema}).
+ */
 const SubgroupSchema = z
   .object({
+    parent: z.string(),
     name: z.string(),
     members: z.array(z.string()).default([]),
     managers: z.array(z.string()).default([]),
@@ -103,6 +111,31 @@ export const WorkgroupRowSchema = z
 
 export type WorkgroupRow = z.infer<typeof WorkgroupRowSchema>;
 export type Subgroup = z.infer<typeof SubgroupSchema>;
+
+/**
+ * Row shape returned by `usersQuery`. One row per distinct user email,
+ * aggregating the user's GitHub identity and the `(workgroup, subgroup)`
+ * memberships they hold.
+ */
+const UserMembershipSchema = z
+  .object({
+    workgroup: z.string(),
+    subgroup: z.string(),
+  })
+  .passthrough();
+
+export const UserRowSchema = z
+  .object({
+    email: z.string(),
+    name: z.string().nullable().optional(),
+    github_login: z.string().nullable().optional(),
+    github_orgs: z.array(z.string()).default([]),
+    memberships: z.array(UserMembershipSchema).default([]),
+  })
+  .passthrough();
+
+export type UserRow = z.infer<typeof UserRowSchema>;
+export type UserMembership = z.infer<typeof UserMembershipSchema>;
 
 /**
  * Row shape returned by `chartsDeploymentsQuery`. One row per

@@ -50,18 +50,40 @@ export interface Config {
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
         /**
-         * Workgroups source. Joins two tables — a parent workgroup table
-         * and a flat (workgroup, subgroup, value) members table — to
-         * reconstruct the nested membership shape the entity transform
-         * consumes.
+         * Workgroups source. Reads the pre-aggregated workgroups view
+         * (one row per workgroup with nested subgroups). Drives Group
+         * entities only — human users live on the separate `users`
+         * source below.
          */
         workgroups?: {
           bigquery: {
             project: string;
             dataset: string;
-            /** Defaults to `wstuckey_workgroups`. */
+            /** Defaults to `workgroups`. */
             workgroupsTable?: string;
-            /** Defaults to `wstuckey_subgroup_members`. */
+            /**
+             * Project that BQ jobs run (and bill) under. Defaults to
+             * `project`. Useful when the caller can read mozdata tables
+             * but doesn't have `bigquery.jobs.create` on `mozdata`.
+             */
+            billingProject?: string;
+          };
+          schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
+        };
+        /**
+         * Users source. Reads the flat `workgroup_subgroup_members`
+         * table filtered to `member_type='user'`, aggregating per email
+         * to produce one row per human with GitHub identity and the
+         * `(workgroup, subgroup)` memberships they hold.
+         *
+         * Optional. When present, the workgroup provider emits User
+         * entities and back-fills each subgroup Group's `spec.members`.
+         */
+        users?: {
+          bigquery: {
+            project: string;
+            dataset: string;
+            /** Defaults to `workgroup_subgroup_members`. */
             subgroupMembersTable?: string;
             /**
              * Project that BQ jobs run (and bill) under. Defaults to

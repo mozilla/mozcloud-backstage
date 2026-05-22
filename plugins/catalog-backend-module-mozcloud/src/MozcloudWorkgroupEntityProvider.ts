@@ -9,19 +9,24 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { workgroupToEntities } from './transform/workgroupToEntities';
-import { WorkgroupRow } from './transform/schema';
+import { userToEntities } from './transform/userToEntities';
+import { UserRow, WorkgroupRow } from './transform/schema';
 
 /**
- * Catalog entity provider for Mozilla workgroups. Reads YAML rows from a
- * {@link Source} (filesystem today; the eventual `mozdata.mozcloud.workgroups`
- * BigQuery table tomorrow), runs them through {@link workgroupToEntities},
- * and applies a single full mutation per refresh.
+ * Catalog entity provider for Mozilla workgroups.
  *
- * Group entities live in the `workgroups` namespace so they don't collide
- * with the GitHub Org provider's Groups in `default`. User entities for
- * workgroup members also live in the `workgroups` namespace, deduplicated
- * by sanitized email; their `spec.memberOf` is the union of every subgroup
- * that lists them as a member.
+ * Reads from two sources:
+ *  - `workgroups` source — one row per workgroup with nested subgroups.
+ *    Drives Group entities (workgroup + subgroup), both in the
+ *    `workgroups` namespace so they don't collide with the GitHub Org
+ *    provider's Groups in `default`.
+ *  - optional `users` source — one row per human user, with GitHub
+ *    metadata and the `(workgroup, subgroup)` memberships they hold.
+ *    Drives User entities in the `workgroups` namespace and back-fills
+ *    each subgroup's `spec.members` so Group pages list humans.
+ *
+ * Without a users source the provider still emits Groups; subgroup
+ * `spec.members` stays empty and no User entities are produced.
  */
 export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
@@ -30,6 +35,7 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     private readonly source: Source<WorkgroupRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
+    private readonly usersSource?: Source<UserRow>,
   ) {}
 
   getProviderName(): string {
@@ -55,16 +61,27 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   }
 
   private async refresh(): Promise<void> {
+    this.logger.info(`Starting new refresh for ${this.getProviderName()}`)
     if (!this.connection) {
       throw new Error('Not initialized');
     }
 
-    const workgroups = await this.source.fetchAll();
-    const locationRef = `mozcloud-workgroups:${this.source.description}`;
+    const [workgroups, users] = await Promise.all([
+      this.source.fetchAll(),
+      this.usersSource ? this.usersSource.fetchAll() : Promise.resolve([]),
+    ]);
+
+    const wgLocationRef = `mozcloud-workgroups:${this.source.description}`;
+    const userLocationRef = this.usersSource
+      ? `mozcloud-users:${this.usersSource.description}`
+      : wgLocationRef;
     const raw: Entity[] = [];
 
     for (const wg of workgroups) {
-      raw.push(...workgroupToEntities(wg, locationRef));
+      raw.push(...workgroupToEntities(wg, wgLocationRef));
+    }
+    for (const u of users) {
+      raw.push(...userToEntities(u, userLocationRef));
     }
 
     const merged = mergeEntities(raw);
@@ -80,52 +97,50 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         merged.length
-      } entities from ${workgroups.length} workgroups`,
+      } entities from ${workgroups.length} workgroups${
+        this.usersSource ? ` and ${users.length} users` : ''
+      }`,
     );
   }
 }
 
 /**
- * Dedupe entities by `kind:namespace/name`, but for User entities union
- * the `spec.memberOf` lists across emissions. Subgroups produce the
- * memberOf relation indirectly via `spec.members` referencing the User,
- * but we also populate `spec.memberOf` on the User side so each User's
- * entity page lists its groups.
+ * Dedupe entities by `kind:namespace/name`, then back-fill each subgroup
+ * Group's `spec.members` from the User entities' `spec.memberOf`.
+ *
+ * Source of truth for membership is the User side — User.spec.memberOf is
+ * populated by `userToEntities` from the user row's `memberships[]`. We
+ * walk those refs to build a reverse map (group -> user refs) and write
+ * the resulting `members` array back onto each Group so the catalog UI
+ * shows membership on both sides.
  */
 function mergeEntities(entities: Entity[]): Entity[] {
   const out = new Map<string, Entity>();
 
-  // First pass: group entities by ref.
   for (const e of entities) {
     const key = entityRef(e);
     if (!out.has(key)) {
       out.set(key, e);
-      continue;
-    }
-    if (e.kind === 'User') {
-      // Should not happen in practice — User entities are emitted from
-      // dedup'd email lists per workgroup — but be defensive.
-      continue;
     }
   }
 
-  // Second pass: walk all subgroup Groups and accumulate memberOf on Users.
-  const userMemberOf = new Map<string, Set<string>>();
-  for (const e of entities) {
-    if (e.kind !== 'Group') continue;
-    const groupRef = entityRef(e);
-    for (const m of (e.spec as { members?: string[] }).members ?? []) {
-      const set = userMemberOf.get(m) ?? new Set<string>();
-      set.add(groupRef.replace(/^group:/, ''));
-      userMemberOf.set(m, set);
+  const groupMembers = new Map<string, Set<string>>();
+  for (const e of out.values()) {
+    if (e.kind !== 'User') continue;
+    const userRef = entityRef(e);
+    for (const groupShortRef of (e.spec as { memberOf?: string[] }).memberOf ??
+      []) {
+      const groupKey = `group:${groupShortRef}`.toLowerCase();
+      const set = groupMembers.get(groupKey) ?? new Set<string>();
+      set.add(userRef);
+      groupMembers.set(groupKey, set);
     }
   }
 
-  for (const [userKey, memberOf] of userMemberOf) {
-    const user = out.get(userKey);
-    if (!user || user.kind !== 'User') continue;
-    (user.spec as { memberOf?: string[] }).memberOf =
-      Array.from(memberOf).sort();
+  for (const [groupKey, members] of groupMembers) {
+    const group = out.get(groupKey);
+    if (!group || group.kind !== 'Group') continue;
+    (group.spec as { members?: string[] }).members = Array.from(members).sort();
   }
 
   return Array.from(out.values());

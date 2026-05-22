@@ -1,25 +1,19 @@
 import { Entity } from '@backstage/catalog-model';
 import { Subgroup, WorkgroupRow } from './schema';
-import {
-  crossWorkgroupRef,
-  emailToUserName,
-  pickDefined,
-  subgroupName,
-  userRef,
-} from './refs';
+import { crossWorkgroupRef, pickDefined, subgroupName } from './refs';
 
 /**
- * Pure transform: a single workgroup YAML -> the Backstage entities.
+ * Pure transform: a single workgroup row -> the Group entities that
+ * represent it.
  *
  * Emits, for each workgroup:
  *   - 1 parent Group         (group:workgroups/<workgroup>)
  *   - N subgroup Groups      (group:workgroups/<workgroup>-<subname>)
- *   - 1 User per member email (user:workgroups/<sanitized-email>)
  *
- * Users emitted by this function are deduplicated and have their
- * `spec.memberOf` unioned at the provider level — a single email may
- * appear in multiple subgroups across multiple workgroups, and we want
- * one User entity that reflects every membership.
+ * User entities are NOT emitted here — `userToEntities` (fed by
+ * `usersQuery`) owns those. The provider merges User.spec.memberOf back
+ * into each subgroup's `spec.members` so Group entity pages still list
+ * their human members.
  */
 export function workgroupToEntities(
   wg: WorkgroupRow,
@@ -37,13 +31,6 @@ export function workgroupToEntities(
   const childRefs = wg.subgroups.map(sub =>
     crossWorkgroupRef(`${wg.workgroup}/${sub.name}`),
   );
-  // Backstage ownership relations are direct, not transitive through the
-  // Group hierarchy. A System owned by `group:workgroups/fxa` will only
-  // surface as "owned" for users whose `memberOf` includes that exact ref.
-  // To propagate ownership down to humans, the parent workgroup lists the
-  // union of every subgroup's members directly. The merge phase in the
-  // provider then writes that membership back onto each User's `memberOf`.
-  // const parentMembers = collectMemberEmails(wg).map(userRef);
 
   entities.push({
     apiVersion: 'backstage.io/v1alpha1',
@@ -66,23 +53,14 @@ export function workgroupToEntities(
   });
 
   for (const sub of wg.subgroups) {
-    entities.push(subgroupToEntity(wg, sub, locationRef));
-  }
-
-  for (const email of collectMemberEmails(wg)) {
-    entities.push(memberToUserEntity(email, locationRef));
+    entities.push(subgroupToEntity(sub, locationRef));
   }
 
   return entities;
 }
 
-function subgroupToEntity(
-  wg: WorkgroupRow,
-  sub: Subgroup,
-  locationRef: string,
-): Entity {
-  const name = subgroupName(wg.workgroup, sub.name);
-  const memberRefs = (sub.members ?? []).map(userRef);
+function subgroupToEntity(sub: Subgroup, locationRef: string): Entity {
+  const name = subgroupName(sub.parent, sub.name);
   // Cross-workgroup composition lives only in the annotation, not in
   // any spec field that the catalog processor turns into a relation.
   // Putting these refs into `spec.children` would create `parentOf`
@@ -115,47 +93,13 @@ function subgroupToEntity(
     },
     spec: {
       type: 'workgroup-subgroup',
-      profile: { displayName: `${wg.workgroup} / ${sub.name}` },
-      parent: `workgroups/${wg.workgroup}`,
+      profile: { displayName: `${sub.parent} / ${sub.name}` },
+      parent: `workgroups/${sub.parent}`,
       children: [],
-      members: memberRefs,
+      // `spec.members` is populated by the provider from the users
+      // source — keep this empty so the old (now incorrect) behavior
+      // of treating `sub.members` as user emails is gone.
+      members: [],
     },
   };
-}
-
-function memberToUserEntity(email: string, locationRef: string): Entity {
-  return {
-    apiVersion: 'backstage.io/v1alpha1',
-    kind: 'User',
-    metadata: {
-      name: emailToUserName(email),
-      namespace: 'workgroups',
-      annotations: pickDefined({
-        'backstage.io/managed-by-location': locationRef,
-        'backstage.io/managed-by-origin-location': locationRef,
-        'mozilla.org/email': email,
-      }),
-    },
-    spec: {
-      profile: {
-        email,
-        displayName: email.split('@')[0],
-      },
-      memberOf: [],
-    },
-  };
-}
-
-/** Unique member emails across all subgroups, preserving first-seen order. */
-function collectMemberEmails(wg: WorkgroupRow): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const sub of wg.subgroups ?? []) {
-    for (const email of sub.members ?? []) {
-      if (seen.has(email)) continue;
-      seen.add(email);
-      out.push(email);
-    }
-  }
-  return out;
 }

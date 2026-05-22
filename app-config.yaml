@@ -206,17 +206,26 @@ catalog:
           dataset: mozcloud
           billingProject: wstuckey-sandbox
       workgroups:
-        # JOIN of `wstuckey_workgroups` (sponsor + subgroup names) with
-        # `wstuckey_subgroup_members` (flat membership with resolved
-        # service-account emails).
+        # Reads `mozdata.mozcloud.workgroups` directly (one row per
+        # workgroup with nested subgroups). Drives Group entities only;
+        # human users come from the `users` source below.
         bigquery:
           project: mozdata
-          dataset: analysis
+          dataset: mozcloud
           billingProject: wstuckey-sandbox
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
+      users:
+        # Aggregates `mozdata.mozcloud.workgroup_subgroup_members` (where
+        # `member_type='user'`) into one row per human with GitHub
+        # identity and their (workgroup, subgroup) memberships. Drives
+        # User entities and back-fills subgroup Group `spec.members`.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+          billingProject: wstuckey-sandbox
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

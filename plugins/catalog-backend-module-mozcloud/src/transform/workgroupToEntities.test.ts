@@ -3,12 +3,7 @@ import { resolve } from 'path';
 import { load } from 'js-yaml';
 import { WorkgroupRowSchema } from './schema';
 import { workgroupToEntities } from './workgroupToEntities';
-import {
-  crossWorkgroupRef,
-  emailToUserName,
-  subgroupName,
-  userRef,
-} from './refs';
+import { crossWorkgroupRef, emailToUserName } from './refs';
 
 const FIXTURE_LOCATION = 'file:src/__fixtures__/wg-<name>.yaml';
 
@@ -17,7 +12,16 @@ const loadFixture = (name: string) => {
     resolve(__dirname, '..', '__fixtures__', `wg-${name}.yaml`),
     'utf8',
   );
-  return WorkgroupRowSchema.parse(load(raw));
+  // The BigQuery `workgroups` query projects each subgroup with a
+  // `parent` field (the parent workgroup name). YAML fixtures are
+  // nested so the parent is implicit — inject it here so the parsed
+  // shape matches what the live source emits.
+  const parsed = load(raw) as { workgroup: string; subgroups?: object[] };
+  const subgroups = (parsed.subgroups ?? []).map(sg => ({
+    ...sg,
+    parent: parsed.workgroup,
+  }));
+  return WorkgroupRowSchema.parse({ ...parsed, subgroups });
 };
 
 describe('workgroupToEntities', () => {
@@ -74,31 +78,12 @@ describe('workgroupToEntities', () => {
     });
 
     it('keeps subgroup children empty and exposes cross-workgroup composition via annotation only', () => {
-      // Cross-workgroup composition refs are recorded in the
-      // `mozilla.org/composed-from` annotation instead of `spec.children`
-      // so the Backstage catalog processor doesn't emit `parentOf`
-      // relations for them. That keeps stock member-aggregation walkers
-      // (`@backstage/plugin-org`'s MembersListCard "Include subgroups")
-      // from descending into workgroups we've merely borrowed access
-      // from when computing a parent workgroup's transitive members.
       const admins = byKind('Group').find(
         g => g.metadata.name === 'backstage-admins',
       )!;
       expect((admins.spec as { children?: string[] }).children).toEqual([]);
       expect(admins.metadata.annotations?.['mozilla.org/composed-from']).toBe(
         'group:workgroups/sre-admins',
-      );
-
-      const iap = byKind('Group').find(
-        g => g.metadata.name === 'backstage-iap-access',
-      )!;
-      expect((iap.spec as { children?: string[] }).children).toEqual([]);
-      expect(iap.metadata.annotations?.['mozilla.org/composed-from']).toBe(
-        [
-          'group:workgroups/backstage-admins',
-          'group:workgroups/backstage-developers',
-          'group:workgroups/backstage-viewers',
-        ].join(','),
       );
     });
 
@@ -107,52 +92,27 @@ describe('workgroupToEntities', () => {
     });
   });
 
-  describe('fxa workgroup (with members)', () => {
+  describe('user entities are not emitted', () => {
+    // Human users come from the separate `userToEntities` transform fed
+    // by the users source. The workgroup transform deals only in Groups.
     const wg = loadFixture('fxa');
     const entities = workgroupToEntities(wg, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
-    it('emits one User per unique member email across all subgroups', () => {
-      const users = byKind('User');
-      // 1 admin + 14 developers + 8 viewers = 23 members, all unique
-      expect(users.length).toBeGreaterThan(20);
-      const refs = users.map(
-        u =>
-          `${u.kind.toLowerCase()}:${u.metadata.namespace}/${u.metadata.name}`,
-      );
-      expect(refs).toContain(userRef('wclouser@mozilla.com'));
-      expect(refs).toContain(userRef('atoufali@mozilla.com'));
-      expect(refs).toContain(userRef('bkochendorfer@firefox.gcp.mozilla.com'));
+    it('emits zero User entities even when the fixture lists member emails', () => {
+      expect(byKind('User')).toHaveLength(0);
     });
 
-    it('preserves the email and namespace on each User', () => {
-      const wclouser = byKind('User').find(
-        u => u.metadata.name === emailToUserName('wclouser@mozilla.com'),
-      )!;
-      expect(wclouser.metadata.namespace).toBe('workgroups');
-      expect(wclouser.metadata.annotations?.['mozilla.org/email']).toBe(
-        'wclouser@mozilla.com',
-      );
-      expect(
-        (wclouser.spec as { profile?: { email?: string } }).profile?.email,
-      ).toBe('wclouser@mozilla.com');
-    });
-
-    it('lists each member as a User ref in the subgroup spec.members', () => {
+    it('leaves subgroup spec.members empty (provider fills it from the users source)', () => {
       const developers = byKind('Group').find(
-        g => g.metadata.name === subgroupName('fxa', 'developers'),
+        g => g.metadata.name === 'fxa-developers',
       )!;
-      const members = (developers.spec as { members?: string[] }).members!;
-      expect(members).toContain(userRef('atoufali@mozilla.com'));
-      expect(members).toContain(userRef('vbudhram@mozilla.com'));
-      expect(members.length).toBeGreaterThanOrEqual(14);
+      expect((developers.spec as { members?: string[] }).members ?? []).toEqual(
+        [],
+      );
     });
 
     it('parent workgroup has no direct members of its own', () => {
-      // Membership lives on subgroups only. The org plugin's
-      // MembersListCard with "Include subgroups" toggled aggregates
-      // members from the workgroup's subgroups at view time; we don't
-      // duplicate that aggregation into the parent's `spec.members`.
       const parent = byKind('Group').find(g => g.metadata.name === 'fxa')!;
       expect((parent.spec as { members?: string[] }).members ?? []).toEqual(
         [],

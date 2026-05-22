@@ -14,12 +14,15 @@ import {
   chartsDeploymentsQuery,
   chartsDeploymentsSourceDescription,
   tenantsQuery,
+  usersQuery,
+  usersSourceDescription,
   workgroupsQuery,
   workgroupsSourceDescription,
 } from './queries';
 import {
   ChartDeploymentsRowSchema,
   TenantRowSchema,
+  UserRowSchema,
   WorkgroupRowSchema,
 } from './transform/schema';
 
@@ -124,7 +127,6 @@ export const catalogModuleMozcloud = createBackendModule({
             project: string;
             dataset: string;
             workgroupsTable?: string;
-            subgroupMembersTable?: string;
             billingProject?: string;
           }>();
           const schedule = wgCfg.has('schedule')
@@ -140,12 +142,42 @@ export const catalogModuleMozcloud = createBackendModule({
             dataProject: wgBq.project,
             logger,
           });
+
+          // Optional second source: human users with GitHub identity and
+          // per-user (workgroup, subgroup) memberships. Drives User
+          // entity emission and back-fills subgroup Group members.
+          const usersCfg = root.getOptionalConfig('users');
+          let usersSource;
+          if (usersCfg) {
+            const usersBq = usersCfg.getConfig('bigquery').get<{
+              project: string;
+              dataset: string;
+              subgroupMembersTable?: string;
+              billingProject?: string;
+            }>();
+            usersSource = defineBigQuerySource({
+              query: usersQuery(usersBq),
+              schema: UserRowSchema,
+              description: usersSourceDescription(usersBq),
+              billingProject: usersBq.billingProject,
+              dataProject: usersBq.project,
+              logger,
+            });
+          }
+
           const taskRunner = scheduler.createScheduledTaskRunner(schedule);
           catalog.addEntityProvider(
-            new MozcloudWorkgroupEntityProvider(source, logger, taskRunner),
+            new MozcloudWorkgroupEntityProvider(
+              source,
+              logger,
+              taskRunner,
+              usersSource,
+            ),
           );
           logger.info(
-            `Registered mozcloud workgroup provider (source: ${source.description})`,
+            `Registered mozcloud workgroup provider (workgroups: ${
+              source.description
+            }${usersSource ? `, users: ${usersSource.description}` : ''})`,
           );
         }
       },
