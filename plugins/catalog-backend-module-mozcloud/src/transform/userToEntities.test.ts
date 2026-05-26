@@ -138,8 +138,8 @@ describe('userToEntities', () => {
     });
   });
 
-  describe('github links', () => {
-    it('adds a profile link for the GitHub user and one link per org', () => {
+  describe('links', () => {
+    it('adds a GitHub profile link plus mozilla.com directory links', () => {
       const [user] = userToEntities(baseRow(), LOCATION);
       expect(user.metadata.links).toEqual([
         {
@@ -148,35 +148,32 @@ describe('userToEntities', () => {
           icon: 'github',
         },
         {
-          url: 'https://github.com/mozilla',
-          title: 'mozilla org',
-          icon: 'github',
+          url: 'https://people.mozilla.org/s?query=alice%40mozilla.com&who=staff',
+          title: 'People Directory Profile',
         },
         {
-          url: 'https://github.com/mozilla-services',
-          title: 'mozilla-services org',
-          icon: 'github',
+          url: 'https://protosaur.dev/dawg/user/alice%40mozilla.com',
+          title: 'alice@mozilla.com on DAWG',
+          icon: 'dawg',
         },
       ]);
     });
 
-    it('omits the profile link when github_login is missing', () => {
+    it('omits the GitHub profile link when github_login is missing', () => {
       const [user] = userToEntities(
-        baseRow({ github_login: null, github_orgs: ['mozilla'] }),
+        baseRow({ github_login: null }),
         LOCATION,
       );
-      expect(user.metadata.links).toEqual([
-        {
-          url: 'https://github.com/mozilla',
-          title: 'mozilla org',
-          icon: 'github',
-        },
-      ]);
+      const links = user.metadata.links ?? [];
+      expect(links.find(l => l.url.startsWith('https://github.com/'))).toBeUndefined();
+      // mozilla.com directory links still present
+      expect(links.some(l => l.url.startsWith('https://people.mozilla.org/'))).toBe(true);
+      expect(links.some(l => l.url.startsWith('https://protosaur.dev/dawg/user/'))).toBe(true);
     });
 
-    it('emits no links when the user has no github metadata', () => {
+    it('emits no mozilla.com directory links for non-@mozilla.com users', () => {
       const [user] = userToEntities(
-        baseRow({ github_login: null, github_orgs: [] }),
+        baseRow({ email: 'alice@example.org', github_login: null }),
         LOCATION,
       );
       expect(user.metadata.links).toEqual([]);
