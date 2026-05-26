@@ -1,11 +1,43 @@
 import { createHash } from 'crypto';
-import { Entity } from '@backstage/catalog-model';
+import { Entity, EntityLink } from '@backstage/catalog-model';
 import { UserRow } from './schema';
 import {
   emailToUserName,
   pickDefined,
   subgroupName,
 } from './refs';
+
+/**
+ * External links for a user: their GitHub profile (when a login is
+ * known) plus one entry per GitHub org they belong to. All carry
+ * `icon: 'github'`, which the app's IconBundleBlueprint resolves into
+ * the GitHub mark.
+ */
+function userLinks(
+  email: string,
+  githubLogin: string | null | undefined,
+): EntityLink[] {
+  const links: EntityLink[] = [];
+  if (githubLogin) {
+    links.push({
+      url: `https://github.com/${githubLogin}`,
+      title: `@${githubLogin} on GitHub`,
+      icon: 'github',
+    });
+  }
+  if (email.endsWith("@mozilla.com")) {
+    links.push({
+      url: `https://people.mozilla.org/s?query=${encodeURIComponent(email)}&who=staff`,
+      title: 'People Directory Profile',
+    })
+    links.push({
+      url: `https://protosaur.dev/dawg/user/${encodeURIComponent(email)}`,
+      title: `${email} on DAWG`,
+      icon: 'dawg'
+    })
+  }
+  return links;
+}
 
 /**
  * Build a Gravatar image URL for the user's email. When Gravatar has a
@@ -62,6 +94,7 @@ export function userToEntities(
               ? user.github_orgs.join(',')
               : undefined,
         }),
+        links: userLinks(user.email, user.github_login),
       },
       spec: {
         profile: {

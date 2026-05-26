@@ -50,7 +50,12 @@ export function tenantToEntities(
   entities.push({
     apiVersion: 'backstage.io/v1alpha1',
     kind: 'Domain',
-    metadata: { name: fn, annotations: baseAnn() },
+    metadata: {
+      name: fn,
+      annotations: baseAnn({
+        'backstage.io/source-location': `url:https://github.com/mozilla/${fn}-infra`,
+      })
+    },
     spec: { owner: DEFAULT_WG_REF},
   });
 

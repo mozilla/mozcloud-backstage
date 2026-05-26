@@ -137,4 +137,49 @@ describe('userToEntities', () => {
       expect(url.searchParams.get('d')).toBe('initials');
     });
   });
+
+  describe('github links', () => {
+    it('adds a profile link for the GitHub user and one link per org', () => {
+      const [user] = userToEntities(baseRow(), LOCATION);
+      expect(user.metadata.links).toEqual([
+        {
+          url: 'https://github.com/alicegithub',
+          title: '@alicegithub on GitHub',
+          icon: 'github',
+        },
+        {
+          url: 'https://github.com/mozilla',
+          title: 'mozilla org',
+          icon: 'github',
+        },
+        {
+          url: 'https://github.com/mozilla-services',
+          title: 'mozilla-services org',
+          icon: 'github',
+        },
+      ]);
+    });
+
+    it('omits the profile link when github_login is missing', () => {
+      const [user] = userToEntities(
+        baseRow({ github_login: null, github_orgs: ['mozilla'] }),
+        LOCATION,
+      );
+      expect(user.metadata.links).toEqual([
+        {
+          url: 'https://github.com/mozilla',
+          title: 'mozilla org',
+          icon: 'github',
+        },
+      ]);
+    });
+
+    it('emits no links when the user has no github metadata', () => {
+      const [user] = userToEntities(
+        baseRow({ github_login: null, github_orgs: [] }),
+        LOCATION,
+      );
+      expect(user.metadata.links).toEqual([]);
+    });
+  });
 });

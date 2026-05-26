@@ -25,22 +25,6 @@ export function tenantOwner(workgroups: string[] | undefined): string {
 }
 
 /**
- * Component name for a chart inside a tenant.
- *
- * Single-chart tenants use the app_code as the component name (so
- * `system:default/backstage` has a `component:default/backstage`). Multi-chart
- * tenants get suffixed names (`socorro-antenna`, `socorro-socorro`) to
- * disambiguate.
- */
-export function chartComponentName(
-  appCode: string,
-  chartName: string,
-  chartCount: number,
-): string {
-  return chartCount === 1 ? appCode : `${appCode}-${chartName}`;
-}
-
-/**
  * Drop keys whose values are undefined or empty string. Useful for building
  * annotation maps where unset upstream fields shouldn't appear.
  */

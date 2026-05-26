@@ -21,8 +21,25 @@ app:
     - api:home/visits: true
     - app-root-element:home/visit-listener: true
     - entity-content:catalog/diagram: false
+    - page:catalog/entity:
+        config:
+          # Show icons next to group and tab titles
+          showNavItemIcons: true
+          defaultContentOrder: natural
+
+    - entity-card:org/user-profile:
+        config:
+          showLinks: true
+
+    - entity-card:org/group-profile:
+        config:
+          showLinks: true
 
     - entity-card:catalog/links:
+        config:
+          type: info
+
+    - entity-card:catalog/gcp-project:
         config:
           type: content
 
@@ -30,7 +47,8 @@ app:
     # members appear without having to toggle. The toggle remains
     # available for switching back to direct-only.
     - entity-card:org/members-list:
-        config: {}
+        config:
+          type: info
 
     # Hide stock catalog relation cards (Depends on..., Has...) when the
     # entity has no relations of that type. Defaults only gate on `kind`,
@@ -42,11 +60,13 @@ app:
           type: info
           filter:
             $not: { kind: { $in: [Group, User] } }
+
     - entity-card:org/ownership:
         config:
           type: content
           initialRelationAggregation: aggregated
           filter: { kind: { $in: [Group, User] } }
+
     - entity-card:api-docs/provided-apis:
         config:
           filter: { spec.providesApis: { $exists: true } }
@@ -98,15 +118,18 @@ app:
                 targetRef: { $hasPrefix: 'domain:' }
     - entity-card:catalog/has-systems:
         config:
+          type: content
           filter:
             kind: domain
             relations:
               $contains:
                 type: hasPart
                 targetRef: { $hasPrefix: 'system:' }
+
     - entity-card:catalog-graph/relations:
         config:
-          filter: {}
+          type: content
+          filter: { $not: { kind: {$in: ['user', 'domain'] } } }
 
 organization:
   name: mozilla

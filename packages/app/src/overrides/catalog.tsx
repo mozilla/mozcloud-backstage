@@ -9,7 +9,7 @@ const mozillaMetadataCard = EntityCardBlueprint.make({
   name: 'mozilla-metadata',
   params: {
     filter: { kind: 'system' },
-    type: 'content',
+    type: 'info',
     loader: async () => {
       const { MozillaMetadataCard } = await import(
         '../components/catalog/MozillaMetadataCard'
@@ -23,7 +23,7 @@ const gcpProjectCard = EntityCardBlueprint.make({
   name: 'gcp-project',
   params: {
     filter: { kind: 'resource', 'spec.type': 'gcp-project' },
-    type: 'content',
+    type: 'info',
     loader: async () => {
       const { GcpProjectCard } = await import(
         '../components/catalog/GcpProjectCard'
@@ -41,7 +41,7 @@ const chartCard = EntityCardBlueprint.make({
       'spec.type': 'service',
       'metadata.annotations.mozilla.org/chart-name': { $exists: true },
     },
-    type: 'content',
+    type: 'info',
     loader: async () => {
       const { ChartCard } = await import('../components/catalog/ChartCard');
       return <ChartCard />;
@@ -53,7 +53,7 @@ const deploymentCard = EntityCardBlueprint.make({
   name: 'mozcloud-deployment',
   params: {
     filter: { kind: 'component', 'spec.type': 'helm-deployment' },
-    type: 'content',
+    type: 'info',
     loader: async () => {
       const { DeploymentCard } = await import(
         '../components/catalog/DeploymentCard'

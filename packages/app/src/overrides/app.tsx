@@ -42,7 +42,7 @@ const mozcloudIcons = IconBundleBlueprint.make({
   params: {
     icons: {
       github: GitHubIcon,
-      dawg: DawgIcon,
+      dawg: <DawgIcon width="1em" height="1em" />,
     }
   }
 });
