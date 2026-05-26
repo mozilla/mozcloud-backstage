@@ -77,7 +77,6 @@ const diagramContent = EntityContentBlueprint.make({
   },
 });
 
-
 /**
  * Overrides for the catalog plugin. Adds Mozilla-specific cards (System
  * metadata, GCP project info, chart/deployment details) on Overview, and

@@ -2,7 +2,7 @@ import GitHubIcon from '@material-ui/icons/GitHub';
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const DawgIcon = (props: SvgIconProps) => (
-  <SvgIcon stroke="none" viewBox="-1 10 126 52" {...props} >
+  <SvgIcon stroke="none" viewBox="-1 10 126 52" {...props}>
     <g id="surface1">
       <path d="M 57.8125 62.757812 C 57.933594 62.734375 58.179688 62.6875 58.296875 62.660156 C 58.3125 63.347656 58.21875 64.03125 58.160156 64.714844 C 57.253906 64.703125 56.34375 64.792969 55.4375 64.738281 C 56.300781 64.171875 57.070312 63.472656 57.8125 62.757812 Z M 57.8125 62.757812 " />
       <path d="M 55.253906 0.609375 C 59.066406 -0.144531 62.976562 0.0390625 66.84375 0.0820312 C 69.59375 0.375 72.371094 0.527344 75.058594 1.238281 C 77.453125 1.863281 79.933594 2.226562 82.230469 3.191406 C 78.601562 3.363281 74.960938 3.183594 71.324219 3.210938 C 64.160156 3.179688 56.992188 3.1875 49.824219 3.222656 C 48.144531 3.1875 46.453125 3.285156 44.777344 3.128906 C 48.140625 1.828125 51.695312 1.117188 55.253906 0.609375 Z M 55.253906 0.609375 " />
@@ -38,17 +38,85 @@ const DawgIcon = (props: SvgIconProps) => (
 const JiraIcon = (props: SvgIconProps) => (
   <SvgIcon viewBox="-20 -20 168 168" {...props}>
     <defs>
-      <linearGradient id="jira-original-a" gradientUnits="userSpaceOnUse" x1="22.034" y1="9.773" x2="17.118" y2="14.842" gradientTransform="scale(4)"><stop offset=".176" stopColor="#0052cc" /><stop offset="1" stopColor="#2684ff" /></linearGradient><linearGradient id="jira-original-b" gradientUnits="userSpaceOnUse" x1="16.641" y1="15.564" x2="10.957" y2="21.094" gradientTransform="scale(4)"><stop offset=".176" stopColor="#0052cc" /><stop offset="1" stopColor="#2684ff" /></linearGradient>
+      <linearGradient
+        id="jira-original-a"
+        gradientUnits="userSpaceOnUse"
+        x1="22.034"
+        y1="9.773"
+        x2="17.118"
+        y2="14.842"
+        gradientTransform="scale(4)"
+      >
+        <stop offset=".176" stopColor="#0052cc" />
+        <stop offset="1" stopColor="#2684ff" />
+      </linearGradient>
+      <linearGradient
+        id="jira-original-b"
+        gradientUnits="userSpaceOnUse"
+        x1="16.641"
+        y1="15.564"
+        x2="10.957"
+        y2="21.094"
+        gradientTransform="scale(4)"
+      >
+        <stop offset=".176" stopColor="#0052cc" />
+        <stop offset="1" stopColor="#2684ff" />
+      </linearGradient>
     </defs>
-    <path d="M108.023 16H61.805c0 11.52 9.324 20.848 20.847 20.848h8.5v8.226c0 11.52 9.328 20.848 20.848 20.848V19.977A3.98 3.98 0 00108.023 16zm0 0" fill="#2684ff" /><path d="M85.121 39.04H38.902c0 11.519 9.325 20.847 20.844 20.847h8.504v8.226c0 11.52 9.328 20.848 20.848 20.848V43.016a3.983 3.983 0 00-3.977-3.977zm0 0" fill="url(#jira-original-a)" /><path d="M62.219 62.078H16c0 11.524 9.324 20.848 20.848 20.848h8.5v8.23c0 11.52 9.328 20.844 20.847 20.844V66.059a3.984 3.984 0 00-3.976-3.98zm0 0" fill="url(#jira-original-b)" />
+    <path
+      d="M108.023 16H61.805c0 11.52 9.324 20.848 20.847 20.848h8.5v8.226c0 11.52 9.328 20.848 20.848 20.848V19.977A3.98 3.98 0 00108.023 16zm0 0"
+      fill="#2684ff"
+    />
+    <path
+      d="M85.121 39.04H38.902c0 11.519 9.325 20.847 20.844 20.847h8.504v8.226c0 11.52 9.328 20.848 20.848 20.848V43.016a3.983 3.983 0 00-3.977-3.977zm0 0"
+      fill="url(#jira-original-a)"
+    />
+    <path
+      d="M62.219 62.078H16c0 11.524 9.324 20.848 20.848 20.848h8.5v8.23c0 11.52 9.328 20.844 20.847 20.844V66.059a3.984 3.984 0 00-3.976-3.98zm0 0"
+      fill="url(#jira-original-b)"
+    />
   </SvgIcon>
 );
 
 const ConfluenceIcon = (props: SvgIconProps) => (
   <SvgIcon viewBox="-20 -20 168 168" {...props}>
-    <defs><linearGradient id="confluence-original-a" gradientUnits="userSpaceOnUse" x1="26.791" y1="28.467" x2="11.792" y2="19.855" gradientTransform="scale(4)"><stop offset="0" stopColor="#0052cc" /><stop offset=".918" stopColor="#2380fb" /><stop offset="1" stopColor="#2684ff" /></linearGradient><linearGradient id="confluence-original-b" gradientUnits="userSpaceOnUse" x1="5.209" y1="2.523" x2="20.208" y2="11.136" gradientTransform="scale(4)"><stop offset="0" stopColor="#0052cc" /><stop offset=".918" stopColor="#2380fb" /><stop offset="1" stopColor="#2684ff" /></linearGradient></defs>
-    <path d="M19.492 86.227a249.047 249.047 0 00-3.047 4.933c-.867 1.45-.433 3.336 1.016 4.207l19.863 12.188c1.45.87 3.332.433 4.203-1.016a139.349 139.349 0 012.899-4.934c7.832-12.91 15.804-11.46 30.011-4.64l19.72 9.281c1.593.727 3.335 0 4.058-1.45l9.426-21.323c.722-1.453 0-3.336-1.454-4.063-4.203-1.887-12.464-5.805-19.714-9.43-26.82-12.914-49.586-12.043-66.98 16.247zm0 0" fill="url(#confluence-original-a)" /><path d="M108.508 37.773a249.047 249.047 0 003.047-4.933c.87-1.45.433-3.336-1.016-4.207L90.676 16.445c-1.45-.87-3.332-.433-4.203 1.016a133.55 133.55 0 01-2.899 4.934c-7.832 12.91-15.804 11.46-30.011 4.64l-19.72-9.281c-1.593-.727-3.331 0-4.058 1.45l-9.422 21.323c-.726 1.453 0 3.34 1.45 4.063 4.203 1.887 12.468 5.805 19.714 9.43 26.825 12.77 49.586 12.042 66.98-16.247zm0 0" fill="url(#confluence-original-b)" />
+    <defs>
+      <linearGradient
+        id="confluence-original-a"
+        gradientUnits="userSpaceOnUse"
+        x1="26.791"
+        y1="28.467"
+        x2="11.792"
+        y2="19.855"
+        gradientTransform="scale(4)"
+      >
+        <stop offset="0" stopColor="#0052cc" />
+        <stop offset=".918" stopColor="#2380fb" />
+        <stop offset="1" stopColor="#2684ff" />
+      </linearGradient>
+      <linearGradient
+        id="confluence-original-b"
+        gradientUnits="userSpaceOnUse"
+        x1="5.209"
+        y1="2.523"
+        x2="20.208"
+        y2="11.136"
+        gradientTransform="scale(4)"
+      >
+        <stop offset="0" stopColor="#0052cc" />
+        <stop offset=".918" stopColor="#2380fb" />
+        <stop offset="1" stopColor="#2684ff" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M19.492 86.227a249.047 249.047 0 00-3.047 4.933c-.867 1.45-.433 3.336 1.016 4.207l19.863 12.188c1.45.87 3.332.433 4.203-1.016a139.349 139.349 0 012.899-4.934c7.832-12.91 15.804-11.46 30.011-4.64l19.72 9.281c1.593.727 3.335 0 4.058-1.45l9.426-21.323c.722-1.453 0-3.336-1.454-4.063-4.203-1.887-12.464-5.805-19.714-9.43-26.82-12.914-49.586-12.043-66.98 16.247zm0 0"
+      fill="url(#confluence-original-a)"
+    />
+    <path
+      d="M108.508 37.773a249.047 249.047 0 003.047-4.933c.87-1.45.433-3.336-1.016-4.207L90.676 16.445c-1.45-.87-3.332-.433-4.203 1.016a133.55 133.55 0 01-2.899 4.934c-7.832 12.91-15.804 11.46-30.011 4.64l-19.72-9.281c-1.593-.727-3.331 0-4.058 1.45l-9.422 21.323c-.726 1.453 0 3.34 1.45 4.063 4.203 1.887 12.468 5.805 19.714 9.43 26.825 12.77 49.586 12.042 66.98-16.247zm0 0"
+      fill="url(#confluence-original-b)"
+    />
   </SvgIcon>
-)
+);
 
-export { GitHubIcon, DawgIcon, JiraIcon, ConfluenceIcon }
+export { GitHubIcon, DawgIcon, JiraIcon, ConfluenceIcon };

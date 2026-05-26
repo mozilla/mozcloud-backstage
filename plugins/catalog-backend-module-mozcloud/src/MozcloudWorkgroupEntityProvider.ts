@@ -61,7 +61,7 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   }
 
   private async refresh(): Promise<void> {
-    this.logger.info(`Starting new refresh for ${this.getProviderName()}`)
+    this.logger.info(`Starting new refresh for ${this.getProviderName()}`);
     if (!this.connection) {
       throw new Error('Not initialized');
     }

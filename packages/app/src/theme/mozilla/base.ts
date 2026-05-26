@@ -87,7 +87,11 @@ export function mozPageThemes(
   for (const key of Object.keys(defaultPageThemes)) {
     out[key] = {
       ...defaultPageThemes[key],
-      ...genPageTheme({colors: backgroundColors, shape: shapes.square, options: { fontColor }})
+      ...genPageTheme({
+        colors: backgroundColors,
+        shape: shapes.square,
+        options: { fontColor },
+      }),
     };
   }
   return out;
@@ -201,7 +205,10 @@ export const mozillaComponents: UnifiedThemeOptions['components'] = {
       outlined: ({ theme }) => ({
         borderColor: theme.palette.text.primary,
         color: theme.palette.text.primary,
-        '&:hover': { borderColor: moz.green, color: theme.palette.text.primary },
+        '&:hover': {
+          borderColor: moz.green,
+          color: theme.palette.text.primary,
+        },
       }),
     },
   },
@@ -219,7 +226,10 @@ export const mozillaComponents: UnifiedThemeOptions['components'] = {
         borderColor: theme.palette.divider,
       }),
       clickable: {
-        '&:hover, &:focus': { backgroundColor: moz.green, color: moz.strongBlack },
+        '&:hover, &:focus': {
+          backgroundColor: moz.green,
+          color: moz.strongBlack,
+        },
       },
     },
   },
@@ -232,7 +242,10 @@ export const mozillaComponents: UnifiedThemeOptions['components'] = {
         color: theme.palette.link,
         textDecoration: 'underline',
         textUnderlineOffset: 1,
-        '&:hover': { color: theme.palette.linkHover, textDecorationThickness: 2 },
+        '&:hover': {
+          color: theme.palette.linkHover,
+          textDecorationThickness: 2,
+        },
       }),
     },
   },

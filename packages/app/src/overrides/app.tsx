@@ -43,8 +43,8 @@ const mozcloudIcons = IconBundleBlueprint.make({
     icons: {
       github: GitHubIcon,
       dawg: <DawgIcon width="1em" height="1em" />,
-    }
-  }
+    },
+  },
 });
 
 const sidebarExtension = NavContentBlueprint.make({

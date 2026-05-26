@@ -129,7 +129,7 @@ app:
     - entity-card:catalog-graph/relations:
         config:
           type: content
-          filter: { $not: { kind: {$in: ['user', 'domain'] } } }
+          filter: { $not: { kind: { $in: ['user', 'domain'] } } }
 
 organization:
   name: mozilla
@@ -171,12 +171,12 @@ integrations:
     #   token: ${GHE_TOKEN}
 
 # proxy:
-  ### Example for how to add a proxy endpoint for the frontend.
-  ### A typical reason to do this is to handle HTTPS and CORS for internal services.
-  # endpoints:
-  #   '/test':
-  #     target: 'https://example.com'
-  #     changeOrigin: true
+### Example for how to add a proxy endpoint for the frontend.
+### A typical reason to do this is to handle HTTPS and CORS for internal services.
+# endpoints:
+#   '/test':
+#     target: 'https://example.com'
+#     changeOrigin: true
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs
@@ -203,7 +203,7 @@ auth:
         - user:workgroups/wstuckey-mozilla-com
 
 # scaffolder:
-  # see https://backstage.io/docs/features/software-templates/configuration for software template options
+# see https://backstage.io/docs/features/software-templates/configuration for software template options
 
 catalog:
   providers:

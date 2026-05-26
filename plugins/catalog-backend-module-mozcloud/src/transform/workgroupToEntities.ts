@@ -1,6 +1,11 @@
 import { Entity, EntityLink } from '@backstage/catalog-model';
 import { Subgroup, WorkgroupRow } from './schema';
-import { crossWorkgroupRef, pickDefined, subgroupName, workgroupRef } from './refs';
+import {
+  crossWorkgroupRef,
+  pickDefined,
+  subgroupName,
+  workgroupRef,
+} from './refs';
 
 const WORKGROUPS_REPO = 'mozilla/global-platform-admin';
 const WORKGROUPS_PATH = 'google-workspace-management/tf/workgroups';
@@ -23,8 +28,12 @@ function dawgUrl(workgroup: string, subgroup?: string): string {
  */
 function workgroupLinks(workgroup: string, subgroup?: string): EntityLink[] {
   return [
-    { url: dawgUrl(workgroup, subgroup), title: 'View on DAWG', icon: "dawg" },
-    { url: workgroupSourceLocation(workgroup), title: 'View source on Github', icon: 'github' },
+    { url: dawgUrl(workgroup, subgroup), title: 'View on DAWG', icon: 'dawg' },
+    {
+      url: workgroupSourceLocation(workgroup),
+      title: 'View source on Github',
+      icon: 'github',
+    },
   ];
 }
 
@@ -90,10 +99,7 @@ export function workgroupToEntities(
   return entities;
 }
 
-function subgroupToEntity(
-  sub: Subgroup,
-  locationRef: string,
-): Entity {
+function subgroupToEntity(sub: Subgroup, locationRef: string): Entity {
   const name = subgroupName(sub.parent, sub.name);
   // Cross-workgroup composition lives only in the annotation, not in
   // any spec field that the catalog processor turns into a relation.

@@ -111,9 +111,9 @@ export const catalogModuleMozcloud = createBackendModule({
             ),
           );
           logger.info(
-            `Registered mozcloud tenant provider (tenants: ${source.description}${
-              chartsSource ? `, charts: ${chartsSource.description}` : ''
-            })`,
+            `Registered mozcloud tenant provider (tenants: ${
+              source.description
+            }${chartsSource ? `, charts: ${chartsSource.description}` : ''})`,
           );
         }
 

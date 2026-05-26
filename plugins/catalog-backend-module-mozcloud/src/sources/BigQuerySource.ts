@@ -69,14 +69,12 @@ export function defineBigQuerySource<T>(
       for (const row of rows) {
         try {
           const stripped = stripNulls(row);
-          const prepared = opts.normalize ? opts.normalize(
-            stripped as Record<string, unknown>,
-          ) : stripped;
+          const prepared = opts.normalize
+            ? opts.normalize(stripped as Record<string, unknown>)
+            : stripped;
           out.push(opts.schema.parse(prepared));
         } catch (error) {
-          opts.logger.warn(
-            `Skipping invalid row: ${(error as Error).message}`,
-          );
+          opts.logger.warn(`Skipping invalid row: ${(error as Error).message}`);
         }
       }
 
@@ -125,10 +123,11 @@ function arrayToMapByName(
   for (const path of paths) {
     convertAtPath(root, path);
   }
-  const charts =
-    ((root.globals as Record<string, unknown> | undefined)?.deployment as
+  const charts = (
+    (root.globals as Record<string, unknown> | undefined)?.deployment as
       | Record<string, unknown>
-      | undefined)?.charts as Record<string, Record<string, unknown>> | undefined;
+      | undefined
+  )?.charts as Record<string, Record<string, unknown>> | undefined;
   if (charts && typeof charts === 'object') {
     for (const chart of Object.values(charts)) {
       convertAtPath(chart, ['images']);

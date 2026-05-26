@@ -1,11 +1,6 @@
 import { Entity } from '@backstage/catalog-model';
 import { TenantRow } from './schema';
-import {
-  pickDefined,
-  tenantOwner,
-  workgroupRef,
-  DEFAULT_WG_REF,
-} from './refs';
+import { pickDefined, tenantOwner, workgroupRef, DEFAULT_WG_REF } from './refs';
 
 const TENANTS_REPO = 'mozilla/global-platform-admin';
 
@@ -54,9 +49,9 @@ export function tenantToEntities(
       name: fn,
       annotations: baseAnn({
         'backstage.io/source-location': `url:https://github.com/mozilla/${fn}-infra`,
-      })
+      }),
     },
-    spec: { owner: DEFAULT_WG_REF},
+    spec: { owner: DEFAULT_WG_REF },
   });
 
   // Each tenant represents a 'System' in backstage

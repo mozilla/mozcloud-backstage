@@ -27,9 +27,8 @@
 
 :root {
   /* ---- Typography ----------------------------------------------- */
-  --bui-font-regular:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  --bui-font-regular: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
   --bui-font-weight-regular: 400;
   --bui-font-weight-bold: 600;
 

@@ -42,7 +42,9 @@ export function workgroupsQuery(cfg: WorkgroupsQueryConfig): string {
   `;
 }
 
-export function workgroupsSourceDescription(cfg: WorkgroupsQueryConfig): string {
+export function workgroupsSourceDescription(
+  cfg: WorkgroupsQueryConfig,
+): string {
   const workgroupsTable = cfg.workgroupsTable ?? DEFAULT_WORKGROUPS_TABLE;
   return `bigquery:${cfg.project}.${cfg.dataset}.${workgroupsTable}`;
 }

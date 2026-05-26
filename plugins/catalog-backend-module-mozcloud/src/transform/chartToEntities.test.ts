@@ -69,7 +69,9 @@ describe('chartToEntities', () => {
     });
 
     it('names sub-Components <component>-<environment>, subcomponentOf the chart', () => {
-      const stage = deployments.find(d => d.metadata.name === 'backstage-stage')!;
+      const stage = deployments.find(
+        d => d.metadata.name === 'backstage-stage',
+      )!;
       expect(stage.spec).toMatchObject({
         type: 'helm-deployment',
         lifecycle: 'production',
@@ -79,7 +81,9 @@ describe('chartToEntities', () => {
     });
 
     it('carries realm/environment/regions on sub-Component annotations', () => {
-      const stage = deployments.find(d => d.metadata.name === 'backstage-stage')!;
+      const stage = deployments.find(
+        d => d.metadata.name === 'backstage-stage',
+      )!;
       const ann = stage.metadata.annotations ?? {};
       expect(ann['mozilla.org/realm']).toBe('nonprod');
       expect(ann['mozilla.org/environment']).toBe('stage');
@@ -88,7 +92,9 @@ describe('chartToEntities', () => {
     });
 
     it('builds an argocd-urls annotation following the Mozilla URL convention', () => {
-      const stage = deployments.find(d => d.metadata.name === 'backstage-stage')!;
+      const stage = deployments.find(
+        d => d.metadata.name === 'backstage-stage',
+      )!;
       expect(stage.metadata.annotations?.['mozilla.org/argocd-urls']).toBe(
         'us-west1=https://webservices.argocd.global.mozgcp.net/applications/argocd-webservices/backstage-stage-us-west1-backstage?view=tree&resource=',
       );
@@ -210,9 +216,7 @@ describe('chartToEntities', () => {
       ).toHaveLength(0);
       // The chart Component is still emitted
       expect(
-        entities.filter(
-          e => (e.spec as { type?: string }).type === 'service',
-        ),
+        entities.filter(e => (e.spec as { type?: string }).type === 'service'),
       ).toHaveLength(1);
     });
 
@@ -251,10 +255,7 @@ describe('chartToEntities', () => {
     });
 
     it('omits the auto-update annotation when the chart declares no images', () => {
-      const entities = chartToEntities(
-        baseRow({ images: [] }),
-        LOCATION,
-      );
+      const entities = chartToEntities(baseRow({ images: [] }), LOCATION);
       const service = entities.find(
         e => (e.spec as { type?: string }).type === 'service',
       )!;
@@ -310,10 +311,7 @@ describe('chartToEntities', () => {
     });
 
     it('falls back to the default workgroup ref when workgroups is empty', () => {
-      const entities = chartToEntities(
-        baseRow({ workgroups: [] }),
-        LOCATION,
-      );
+      const entities = chartToEntities(baseRow({ workgroups: [] }), LOCATION);
       const service = entities.find(
         e => (e.spec as { type?: string }).type === 'service',
       )!;
@@ -323,10 +321,7 @@ describe('chartToEntities', () => {
 
   describe('empty deployments', () => {
     it('emits only the chart Component for argocd charts with no deployments', () => {
-      const entities = chartToEntities(
-        baseRow({ deployments: [] }),
-        LOCATION,
-      );
+      const entities = chartToEntities(baseRow({ deployments: [] }), LOCATION);
       expect(entities).toHaveLength(1);
       expect((entities[0].spec as { type?: string }).type).toBe('service');
     });

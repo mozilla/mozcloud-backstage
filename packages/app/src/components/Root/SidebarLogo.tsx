@@ -1,4 +1,8 @@
-import { Link, sidebarConfig, useSidebarOpenState } from '@backstage/core-components';
+import {
+  Link,
+  sidebarConfig,
+  useSidebarOpenState,
+} from '@backstage/core-components';
 import { makeStyles } from '@material-ui/core';
 import LogoFull from './LogoFull';
 import LogoIcon from './LogoIcon';

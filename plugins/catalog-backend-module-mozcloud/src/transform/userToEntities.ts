@@ -1,11 +1,7 @@
 import { createHash } from 'crypto';
 import { Entity, EntityLink } from '@backstage/catalog-model';
 import { UserRow } from './schema';
-import {
-  emailToUserName,
-  pickDefined,
-  subgroupName,
-} from './refs';
+import { emailToUserName, pickDefined, subgroupName } from './refs';
 
 /**
  * External links for a user: their GitHub profile (when a login is
@@ -25,16 +21,18 @@ function userLinks(
       icon: 'github',
     });
   }
-  if (email.endsWith("@mozilla.com")) {
+  if (email.endsWith('@mozilla.com')) {
     links.push({
-      url: `https://people.mozilla.org/s?query=${encodeURIComponent(email)}&who=staff`,
+      url: `https://people.mozilla.org/s?query=${encodeURIComponent(
+        email,
+      )}&who=staff`,
       title: 'People Directory Profile',
-    })
+    });
     links.push({
       url: `https://protosaur.dev/dawg/user/${encodeURIComponent(email)}`,
       title: `${email} on DAWG`,
-      icon: 'dawg'
-    })
+      icon: 'dawg',
+    });
   }
   return links;
 }
@@ -64,10 +62,7 @@ function gravatarUrl(email: string, name?: string | null): string {
  * Multiple memberships for the same email are already collapsed onto a
  * single row by `usersQuery`, so this transform doesn't need to dedupe.
  */
-export function userToEntities(
-  user: UserRow,
-  locationRef: string,
-): Entity[] {
+export function userToEntities(user: UserRow, locationRef: string): Entity[] {
   const baseAnn = (extra: Record<string, string | undefined> = {}) =>
     pickDefined({
       'backstage.io/managed-by-location': locationRef,
@@ -75,8 +70,8 @@ export function userToEntities(
       ...extra,
     });
 
-  const memberOf = user.memberships.map(m =>
-    `workgroups/${subgroupName(m.workgroup, m.subgroup)}`,
+  const memberOf = user.memberships.map(
+    m => `workgroups/${subgroupName(m.workgroup, m.subgroup)}`,
   );
 
   return [

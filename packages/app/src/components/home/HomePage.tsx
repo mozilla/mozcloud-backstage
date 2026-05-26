@@ -32,22 +32,22 @@ const tools = [
   {
     url: 'https://mozilla-hub.atlassian.net/wiki',
     label: 'Confluence',
-    icon: <ConfluenceIcon fontSize='large' />,
+    icon: <ConfluenceIcon fontSize="large" />,
   },
   {
     url: 'https://github.com/mozilla',
     label: 'GitHub: mozilla',
-    icon: <GitHubIcon fontSize='large' />,
+    icon: <GitHubIcon fontSize="large" />,
   },
   {
     url: 'https://github.com/mozilla-services',
     label: 'GitHub: mozilla-services',
-    icon: <GitHubIcon fontSize='large' />,
+    icon: <GitHubIcon fontSize="large" />,
   },
   {
     url: 'https://protosaur.dev/dawg/',
     label: 'Data Access Workgroups',
-    icon: <DawgIcon fontSize='large' />,
+    icon: <DawgIcon fontSize="large" />,
   },
 ];
 

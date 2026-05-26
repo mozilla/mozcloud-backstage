@@ -75,13 +75,16 @@ export const WorkgroupOwnershipCard = (props: Props) => {
     (entity.spec as { type?: string } | undefined)?.type ===
       'workgroup-subgroup';
   const kinds = useMemo(
-    () =>
-      props.entityFilterKind ?? ['Component', 'API', 'System', 'Resource'],
+    () => props.entityFilterKind ?? ['Component', 'API', 'System', 'Resource'],
     [props.entityFilterKind],
   );
   const entityLimit = props.entityLimit ?? 6;
 
-  const { loading, error, value: counters } = useAsync(async () => {
+  const {
+    loading,
+    error,
+    value: counters,
+  } = useAsync(async () => {
     const owners = await getOwners(entity, catalogApi);
     if (owners.length === 0) return [];
     const owned = await batchGetOwnedEntitiesByOwners(
@@ -102,7 +105,11 @@ export const WorkgroupOwnershipCard = (props: Props) => {
       <CardBody>
         {loading && <Skeleton />}
         {error && (
-          <Alert status="danger" title="Failed to load ownership" description={error.message} />
+          <Alert
+            status="danger"
+            title="Failed to load ownership"
+            description={error.message}
+          />
         )}
         {!loading && !error && (!counters || counters.length === 0) && (
           <Text color="secondary">Nothing owned.</Text>
@@ -156,8 +163,8 @@ async function getOwners(
   if (entity.kind === 'User') {
     return getUserOwnersWithAncestors(entity, catalogApi);
   }
-  if (entity.kind === 'Group' && type === 'workgroup-subgroup') {  
-    return getGroupAncestorRefs(entity, catalogApi)
+  if (entity.kind === 'Group' && type === 'workgroup-subgroup') {
+    return getGroupAncestorRefs(entity, catalogApi);
   }
   return [stringifyEntityRef(entity)];
 }
@@ -281,7 +288,8 @@ function reduceToCounters(
   limit: number,
 ): Counter[] {
   const ownerNames = owners.map(
-    ref => entityPresentationSnapshot(ref, { defaultKind: 'group' }).primaryTitle,
+    ref =>
+      entityPresentationSnapshot(ref, { defaultKind: 'group' }).primaryTitle,
   );
   const counts: Counter[] = [];
   for (const e of entities) {

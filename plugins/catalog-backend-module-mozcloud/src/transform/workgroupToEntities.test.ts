@@ -200,9 +200,7 @@ describe('workgroupToEntities', () => {
 
     it('parent workgroup has no direct members of its own', () => {
       const parent = byKind('Group').find(g => g.metadata.name === 'fxa')!;
-      expect((parent.spec as { members?: string[] }).members ?? []).toEqual(
-        [],
-      );
+      expect((parent.spec as { members?: string[] }).members ?? []).toEqual([]);
     });
   });
 });

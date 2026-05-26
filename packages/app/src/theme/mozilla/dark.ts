@@ -24,12 +24,28 @@ export const mozillaDarkTheme = createUnifiedTheme({
         default: moz.black,
         paper: moz.greyMinus2,
       },
-      primary: { main: moz.green, dark: moz.greenMinus1, light: moz.greenPlus1 },
+      primary: {
+        main: moz.green,
+        dark: moz.greenMinus1,
+        light: moz.greenPlus1,
+      },
       secondary: { main: moz.orange, dark: moz.orangeMinus1 },
-      error: { main: moz.orangeMinus1, dark: moz.orangeMinus1, light: moz.orange },
+      error: {
+        main: moz.orangeMinus1,
+        dark: moz.orangeMinus1,
+        light: moz.orange,
+      },
       warning: { main: moz.orange, dark: moz.orangeMinus1, light: moz.orange },
-      success: { main: moz.green, dark: moz.greenMinus1, light: moz.greenPlus1 },
-      info: { main: moz.pinkMinus1, dark: moz.pinkMinus1, light: moz.pinkMinus1 },
+      success: {
+        main: moz.green,
+        dark: moz.greenMinus1,
+        light: moz.greenPlus1,
+      },
+      info: {
+        main: moz.pinkMinus1,
+        dark: moz.pinkMinus1,
+        light: moz.pinkMinus1,
+      },
       grey: {
         50: moz.white,
         100: moz.grey1,

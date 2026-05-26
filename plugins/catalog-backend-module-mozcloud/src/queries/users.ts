@@ -14,8 +14,7 @@ interface UsersQueryConfig {
 }
 
 const DEFAULT_SUBGROUP_MEMBERS_TABLE = 'workgroup_subgroup_members';
-const DEFAULT_PERSON_DIRECTORY_TABLE =
-  'mozdata.workday.person_mozilla_com';
+const DEFAULT_PERSON_DIRECTORY_TABLE = 'mozdata.workday.person_mozilla_com';
 
 /**
  * One row per distinct user (by `value`, the email) aggregating:
