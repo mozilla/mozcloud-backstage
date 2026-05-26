@@ -213,9 +213,6 @@ catalog:
           project: mozdata
           dataset: mozcloud
           table: tenants
-          # Bill jobs to a project the local user has bigquery.jobs.create on;
-          # `mozdata` is read-only for most analysts.
-          billingProject: wstuckey-sandbox
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
@@ -230,7 +227,6 @@ catalog:
         bigquery:
           project: mozdata
           dataset: mozcloud
-          billingProject: wstuckey-sandbox
       workgroups:
         # Reads `mozdata.mozcloud.workgroups` directly (one row per
         # workgroup with nested subgroups). Drives Group entities only;
@@ -238,7 +234,6 @@ catalog:
         bigquery:
           project: mozdata
           dataset: mozcloud
-          billingProject: wstuckey-sandbox
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
@@ -251,7 +246,6 @@ catalog:
         bigquery:
           project: mozdata
           dataset: mozcloud
-          billingProject: wstuckey-sandbox
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

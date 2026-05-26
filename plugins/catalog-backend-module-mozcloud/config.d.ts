@@ -13,12 +13,6 @@ export interface Config {
             project: string;
             dataset: string;
             table: string;
-            /**
-             * Project that BQ jobs run (and bill) under. Defaults to
-             * `project`. Useful when the caller can read mozdata tables
-             * but doesn't have `bigquery.jobs.create` on `mozdata`.
-             */
-            billingProject?: string;
           };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
@@ -40,12 +34,6 @@ export interface Config {
             tenantsTable?: string;
             /** Defaults to `tenants_deployed_charts`. */
             deployedChartsTable?: string;
-            /**
-             * Project that BQ jobs run (and bill) under. Defaults to
-             * `project`. Useful when the caller can read mozdata tables
-             * but doesn't have `bigquery.jobs.create` on `mozdata`.
-             */
-            billingProject?: string;
           };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
@@ -61,12 +49,6 @@ export interface Config {
             dataset: string;
             /** Defaults to `workgroups`. */
             workgroupsTable?: string;
-            /**
-             * Project that BQ jobs run (and bill) under. Defaults to
-             * `project`. Useful when the caller can read mozdata tables
-             * but doesn't have `bigquery.jobs.create` on `mozdata`.
-             */
-            billingProject?: string;
           };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
@@ -85,12 +67,6 @@ export interface Config {
             dataset: string;
             /** Defaults to `workgroup_subgroup_members`. */
             subgroupMembersTable?: string;
-            /**
-             * Project that BQ jobs run (and bill) under. Defaults to
-             * `project`. Useful when the caller can read mozdata tables
-             * but doesn't have `bigquery.jobs.create` on `mozdata`.
-             */
-            billingProject?: string;
           };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
