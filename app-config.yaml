@@ -15,10 +15,121 @@ app:
     - page:home:
         config:
           path: /
+
     # The home plugin ships these as opt-in (disabled: true). Enable both
     # so HomePageRecentlyVisited / HomePageTopVisited have an API to query.
     - api:home/visits: true
     - app-root-element:home/visit-listener: true
+    - entity-content:catalog/diagram: false
+    - page:catalog/entity:
+        config:
+          # Show icons next to group and tab titles
+          showNavItemIcons: true
+          defaultContentOrder: natural
+
+    - entity-card:org/user-profile:
+        config:
+          showLinks: true
+
+    - entity-card:org/group-profile:
+        config:
+          showLinks: true
+
+    - entity-card:catalog/links:
+        config:
+          type: info
+
+    - entity-card:catalog/gcp-project:
+        config:
+          type: content
+
+    # Default the Group "Members" card to aggregated view so subgroup
+    # members appear without having to toggle. The toggle remains
+    # available for switching back to direct-only.
+    - entity-card:org/members-list:
+        config:
+          type: info
+
+    # Hide stock catalog relation cards (Depends on..., Has...) when the
+    # entity has no relations of that type. Defaults only gate on `kind`,
+    # so they render empty "No X" tables for every entity. `$contains`
+    # over `relations` keeps the extension from instantiating unless the
+    # entity has at least one matching relation.
+    - entity-card:catalog/about:
+        config:
+          type: info
+          filter:
+            $not: { kind: { $in: [Group, User] } }
+
+    - entity-card:org/ownership:
+        config:
+          type: content
+          initialRelationAggregation: aggregated
+          filter: { kind: { $in: [Group, User] } }
+
+    - entity-card:api-docs/provided-apis:
+        config:
+          filter: { spec.providesApis: { $exists: true } }
+    - entity-card:api-docs/consumed-apis:
+        config:
+          filter: { spec.consumesApis: { $exists: true } }
+    - entity-card:catalog/depends-on-components:
+        config:
+          filter: { spec.dependsOn: { $exists: true } }
+    - entity-card:catalog/depends-on-resources:
+        config:
+          filter: { spec.dependsOn: { $exists: true } }
+    # `has-*` cards need to filter on the derived `relations` array, not
+    # `spec.hasPart`. The parent rarely has `spec.hasPart` set — children
+    # declare `spec.subcomponentOf` / `spec.system` / `spec.domain` and
+    # the catalog processor derives the inverse `hasPart` relation on
+    # the parent. The `spec.*` predicate misses that.
+    - entity-card:catalog/has-components:
+        config:
+          filter:
+            kind: system
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'component:' }
+    - entity-card:catalog/has-resources:
+        config:
+          filter:
+            kind: system
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'resource:' }
+    - entity-card:catalog/has-subcomponents:
+        config:
+          filter:
+            kind: component
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'component:' }
+    - entity-card:catalog/has-subdomains:
+        config:
+          filter:
+            kind: domain
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'domain:' }
+    - entity-card:catalog/has-systems:
+        config:
+          type: content
+          filter:
+            kind: domain
+            relations:
+              $contains:
+                type: hasPart
+                targetRef: { $hasPrefix: 'system:' }
+
+    - entity-card:catalog-graph/relations:
+        config:
+          type: content
+          filter: { $not: { kind: { $in: ['user', 'domain'] } } }
 
 organization:
   name: mozilla
@@ -59,13 +170,13 @@ integrations:
     #   apiBaseUrl: https://ghe.example.net/api/v3
     #   token: ${GHE_TOKEN}
 
-proxy:
-  ### Example for how to add a proxy endpoint for the frontend.
-  ### A typical reason to do this is to handle HTTPS and CORS for internal services.
-  # endpoints:
-  #   '/test':
-  #     target: 'https://example.com'
-  #     changeOrigin: true
+# proxy:
+### Example for how to add a proxy endpoint for the frontend.
+### A typical reason to do this is to handle HTTPS and CORS for internal services.
+# endpoints:
+#   '/test':
+#     target: 'https://example.com'
+#     changeOrigin: true
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs
@@ -82,26 +193,72 @@ auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
   environment: dev
   providers:
-    # See https://backstage.io/docs/auth/guest/provider
-    guest: {}
+    # See https://backstage.io/docs/auth/guest/provider.
+    # In dev we sign the guest in as a real catalog user so ownership
+    # filters ("My Groups", "owned by me") and permission checks behave
+    # as they would for the SSO'd user.
+    guest:
+      userEntityRef: user:workgroups/wstuckey-mozilla-com
+      ownershipEntityRefs:
+        - user:workgroups/wstuckey-mozilla-com
 
-scaffolder:
-  # see https://backstage.io/docs/features/software-templates/configuration for software template options
+# scaffolder:
+# see https://backstage.io/docs/features/software-templates/configuration for software template options
 
 catalog:
+  providers:
+    mozcloud:
+      tenants:
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+          table: tenants
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
+      charts:
+        # Joins `tenants.globals.deployment.charts[]` with
+        # `tenants_deployed_charts` to produce one row per (tenant, chart)
+        # carrying the declared chart metadata + the actual deployment
+        # tree (realm -> environments -> regions). Consumed by the
+        # tenant entity provider as a second source to enrich chart
+        # Components with deployment annotations.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+      workgroups:
+        # Reads `mozdata.mozcloud.workgroups` directly (one row per
+        # workgroup with nested subgroups). Drives Group entities only;
+        # human users come from the `users` source below.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 5 }
+          initialDelay: { seconds: 30 }
+      users:
+        # Aggregates `mozdata.mozcloud.workgroup_subgroup_members` (where
+        # `member_type='user'`) into one row per human with GitHub
+        # identity and their (workgroup, subgroup) memberships. Drives
+        # User entities and back-fills subgroup Group `spec.members`.
+        bigquery:
+          project: mozdata
+          dataset: mozcloud
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
 
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, User, Group]
 
-  locations:
-    - type: file
-      target: scaffolder-templates/*/template.yaml
-      rules:
-        - allow:
-            - Template
+  # locations:
+  #   - type: file
+  #     target: scaffolder-templates/*/template.yaml
+  #     rules:
+  #       - allow:
+  #           - Template
 
 # see https://backstage.io/docs/permissions/getting-started for more on the permission framework
 permission:

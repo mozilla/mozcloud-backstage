@@ -41,8 +41,10 @@ test('Catalog page renders', async ({ page }) => {
 
 test('Sidebar exposes the core navigation items', async ({ page }) => {
   await signInAsGuest(page);
-  // The new sidebar adds a separate Catalog item alongside Home.
-  for (const label of ['Home', 'Catalog', 'APIs', 'Docs', 'Create...']) {
+  // Mozilla sidebar (`packages/app/src/components/Root/Sidebar.tsx`)
+  // only enables a focused set of nav items — Docs and Create are
+  // commented out until TechDocs and the scaffolder are wired up.
+  for (const label of ['Home', 'Catalog']) {
     await expect(page.getByRole('link', { name: label }).first()).toBeVisible();
   }
 });

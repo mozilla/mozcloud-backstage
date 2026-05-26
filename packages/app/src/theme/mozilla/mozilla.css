@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Mozilla+Text:wght@200..700&display=swap');
+
+/*
+ * Backstage UI (BUI) CSS variables — Mozilla brand theme.
+ *
+ * BUI components (MembersListCard, avatars, search results, new Buttons,
+ * Alerts, focus rings, etc.) don't read from the MUI palette in
+ * `./light.ts` / `./dark.ts` — they're themed via these CSS custom
+ * properties. The two sides MUST stay aligned; brand color literals
+ * here mirror the `moz` map in `./index.ts`.
+ *
+ * Mirrors the apertureBui pattern
+ * (https://github.com/backstage/demo/blob/master/packages/app/src/theme/apertureBui.ts)
+ * but covers light AND dark via the `data-theme-mode` attribute BUI
+ * sets on the DOM, and adds the dark overrides apertureBui doesn't.
+ *
+ * Per the brand guide (https://brand.mozilla.com/document/231#/-/color):
+ *  - Page backgrounds use `white` (#FAFAFA) / `black` (#161616). Strong
+ *    variants are typography-only.
+ *  - The brand-solid (primary buttons / focus rings) is Green (#00D230);
+ *    text on green is `strong-black` (#000000) per the AAA pair.
+ *  - Tertiary palette (aqua/seed/grey/clay) is data-viz only. Greys
+ *    here are a knowing deviation for borders / muted text / elevated
+ *    dark surfaces — the brand provides no neutral midtones outside
+ *    the data-viz palette.
+ */
+
+:root {
+  /* ---- Typography ----------------------------------------------- */
+  --bui-font-regular: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --bui-font-weight-regular: 400;
+  --bui-font-weight-bold: 600;
+
+  /* ---- Brand neutrals ------------------------------------------- */
+  --bui-black: #000000; /* strong-black — typography only */
+  --bui-white: #ffffff; /* strong-white — typography only */
+
+  /* ---- Foreground (text / icons) — light defaults --------------- */
+  --bui-fg-primary: #000000; /* strong-black */
+  --bui-fg-secondary: #6d6d6d; /* grey -1 — muted text */
+  --bui-fg-disabled: rgba(0, 0, 0, 0.38);
+  --bui-fg-solid: #000000; /* text on bg-solid (green) per AAA 8.84:1 */
+  --bui-fg-solid-disabled: rgba(0, 0, 0, 0.38);
+
+  --bui-fg-danger: #ff453f; /* orange -1 */
+  --bui-fg-warning: #ff9456; /* orange */
+  --bui-fg-success: #28733f; /* green -1 */
+  --bui-fg-info: #ae49ec; /* pink -1 (violet) */
+
+  /* "on-bg" = text color when rendered ON the same-status bg pill.
+     Use the family's deepest shade for the AAA pair. */
+  --bui-fg-danger-on-bg: #330505; /* orange -2 */
+  --bui-fg-warning-on-bg: #330505; /* orange -2 */
+  --bui-fg-success-on-bg: #022611; /* green -2 */
+  --bui-fg-info-on-bg: #210340; /* pink -2 */
+
+  /* ---- Background ----------------------------------------------- */
+  --bui-bg-app: #fafafa; /* white — page canvas */
+  --bui-bg-neutral-1: #ffffff; /* strong-white — raised cards */
+  --bui-bg-neutral-2: #fafafa; /* white — flush surface */
+  --bui-bg-neutral-3: #e8e8e8; /* grey +1 — sunken / hover */
+  --bui-bg-neutral-4: #e8e8e8;
+
+  --bui-bg-solid: #00d230; /* green — primary CTA */
+  --bui-bg-solid-hover: #28733f; /* green -1 */
+  --bui-bg-solid-pressed: #022611; /* green -2 */
+  --bui-bg-solid-disabled: #d6ffcd; /* green +1 */
+
+  --bui-bg-danger: #faf0e6; /* orange +1 — pale wash */
+  --bui-bg-warning: #faf0e6; /* orange +1 */
+  --bui-bg-success: #d6ffcd; /* green +1 */
+  --bui-bg-info: #fff1f8; /* pink +1 */
+
+  /* ---- Border --------------------------------------------------- */
+  --bui-border-1: #e8e8e8; /* grey +1 — hairline */
+  --bui-border-2: #b3b3b3; /* grey — emphasized */
+
+  --bui-border-danger: #ff453f; /* orange -1 */
+  --bui-border-warning: #ff9456; /* orange */
+  --bui-border-success: #28733f; /* green -1 */
+  --bui-border-info: #ae49ec; /* pink -1 */
+
+  /* ---- Focus ring ----------------------------------------------- */
+  --bui-ring: #d6ffcd; /* green +1 — pale green focus halo */
+}
+
+[data-theme-mode='dark'] {
+  /* ---- Foreground ----------------------------------------------- */
+  --bui-fg-primary: #ffffff; /* strong-white */
+  --bui-fg-secondary: #b3b3b3; /* grey */
+  --bui-fg-disabled: rgba(255, 255, 255, 0.38);
+  --bui-fg-solid: #000000; /* still strong-black on green per AAA */
+  --bui-fg-solid-disabled: rgba(255, 255, 255, 0.38);
+
+  --bui-fg-danger: #ff453f;
+  --bui-fg-warning: #ff9456;
+  --bui-fg-success: #00d230; /* brighter green reads better on dark */
+  --bui-fg-info: #ae49ec;
+
+  --bui-fg-danger-on-bg: #ffffff;
+  --bui-fg-warning-on-bg: #000000;
+  --bui-fg-success-on-bg: #000000;
+  --bui-fg-info-on-bg: #ffffff;
+
+  /* ---- Background ----------------------------------------------- */
+  --bui-bg-app: #161616; /* black — page canvas */
+  --bui-bg-neutral-1: #414141; /* grey -2 — raised cards */
+  --bui-bg-neutral-2: #4d4d4d; /* nested surfaces */
+  --bui-bg-neutral-3: #595959;
+  --bui-bg-neutral-4: #6d6d6d; /* grey -1 */
+
+  --bui-bg-solid: #00d230; /* green stays the brand mark */
+  --bui-bg-solid-hover: #d6ffcd; /* green +1 — lighter for dark hover */
+  --bui-bg-solid-pressed: #28733f; /* green -1 */
+  --bui-bg-solid-disabled: #28733f;
+
+  --bui-bg-danger: #330505; /* orange -2 — deep wash */
+  --bui-bg-warning: #330505;
+  --bui-bg-success: #022611; /* green -2 */
+  --bui-bg-info: #210340; /* pink -2 */
+
+  /* ---- Border --------------------------------------------------- */
+  --bui-border-1: #414141; /* grey -2 */
+  --bui-border-2: #6d6d6d; /* grey -1 */
+
+  --bui-border-danger: #ff453f;
+  --bui-border-warning: #ff9456;
+  --bui-border-success: #00d230;
+  --bui-border-info: #ae49ec;
+
+  /* ---- Focus ring ----------------------------------------------- */
+  --bui-ring: #022611; /* green -2 — deep green halo on dark */
+}
+
+/*
+ * Enlarge profile-card avatars (User + Group entity pages) to 3rem.
+ * BUI exposes a stable global class (`bui-AvatarRoot`) on every Avatar,
+ * so we can target it directly. Scoped to `.MuiCardHeader-title` and
+ * `[data-size='small']` — that's exactly the pattern UserProfileCard
+ * and GroupProfileCard render, and nothing else in the app does, so
+ * sidebar / search-result / members-list avatars keep their defaults.
+ */
+.bui-GridItem .bui-Flex .bui-AvatarRoot[data-size='small'] {
+  height: 4rem;
+  width: 4rem;
+}

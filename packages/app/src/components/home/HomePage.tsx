@@ -1,4 +1,3 @@
-import { HomePageLayoutBlueprint } from '@backstage/plugin-home-react/alpha';
 import {
   HomePageRecentlyVisited,
   HomePageStarredEntities,
@@ -9,6 +8,7 @@ import { HomePageSearchBar } from '@backstage/plugin-search';
 import { SearchContextProvider } from '@backstage/plugin-search-react';
 import { Content, Header, Page } from '@backstage/core-components';
 import { Grid, makeStyles } from '@material-ui/core';
+import { ConfluenceIcon, GitHubIcon, JiraIcon, DawgIcon } from '../icons';
 
 const useStyles = makeStyles(theme => ({
   searchBarInput: {
@@ -27,36 +27,31 @@ const tools = [
   {
     url: 'https://mozilla-hub.atlassian.net',
     label: 'Jira',
-    icon: <img src="https://www.atlassian.com/favicon.ico" alt="Jira" />,
+    icon: <JiraIcon fontSize="large" />,
   },
   {
     url: 'https://mozilla-hub.atlassian.net/wiki',
     label: 'Confluence',
-    icon: <img src="https://www.atlassian.com/favicon.ico" alt="Confluence" />,
+    icon: <ConfluenceIcon fontSize="large" />,
   },
   {
     url: 'https://github.com/mozilla',
     label: 'GitHub: mozilla',
-    icon: (
-      <img
-        src="https://github.githubassets.com/favicons/favicon.png"
-        alt="GitHub"
-      />
-    ),
+    icon: <GitHubIcon fontSize="large" />,
   },
   {
     url: 'https://github.com/mozilla-services',
     label: 'GitHub: mozilla-services',
-    icon: (
-      <img
-        src="https://github.githubassets.com/favicons/favicon.png"
-        alt="GitHub"
-      />
-    ),
+    icon: <GitHubIcon fontSize="large" />,
+  },
+  {
+    url: 'https://protosaur.dev/dawg/',
+    label: 'Data Access Workgroups',
+    icon: <DawgIcon fontSize="large" />,
   },
 ];
 
-const MozillaHomePage = () => {
+export const HomePage = () => {
   const classes = useStyles();
   return (
     <SearchContextProvider>
@@ -91,9 +86,3 @@ const MozillaHomePage = () => {
     </SearchContextProvider>
   );
 };
-
-export const homePageLayout = HomePageLayoutBlueprint.make({
-  params: {
-    loader: async () => MozillaHomePage,
-  },
-});

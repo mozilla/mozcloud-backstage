@@ -1,0 +1,28 @@
+workgroup: backstage
+sponsor: phammer@mozilla.com
+managers: []
+tickets:
+  - https://mozilla-hub.atlassian.net/browse/MZCLD-434
+
+subgroups:
+  - name: admins
+    members: []
+    workgroups:
+      - sre/admins
+
+  - name: developers
+    members: []
+    workgroups:
+      - sre/developers
+
+  - name: viewers
+    members: []
+    workgroups:
+      - sre/viewers
+
+  - name: iap-access
+    members: []
+    workgroups:
+      - backstage/admins
+      - backstage/developers
+      - backstage/viewers
