@@ -45,7 +45,7 @@ function TypeAwareMembersListCard() {
   return (
     <MembersListCard
       relationAggregation={isParent ? 'aggregated' : 'direct'}
-      showAggregateMembersToggle={ true }
+      showAggregateMembersToggle
     />
   );
 }
