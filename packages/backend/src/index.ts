@@ -75,4 +75,9 @@ backend.add(import('@backstage/plugin-auth-backend-module-gcp-iap-provider'));
 //
 backend.add(import('@internal/plugin-catalog-backend-module-mozcloud'));
 
+//
+// MCP Actions plugin
+//
+backend.add(import('@backstage/plugin-mcp-actions-backend'));
+
 backend.start();
