@@ -74,7 +74,7 @@ export function userToEntities(user: UserRow, locationRef: string): Entity[] {
     m => `workgroups/${subgroupName(m.workgroup, m.subgroup)}`,
   );
 
-  const userName = user.name ?? user.email.split('@')[0]
+  const userName = user.name ?? user.email.split('@')[0];
 
   return [
     {
