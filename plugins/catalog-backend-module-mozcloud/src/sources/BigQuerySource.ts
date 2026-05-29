@@ -11,9 +11,15 @@ interface DefineBigQuerySourceOptions<T> {
   /** Stable identifier — used in log lines and as the provider's location key. */
   description: string;
   /**
-   * Project the BigQuery client targets. Jobs are created and billed
-   * against this project, so the calling identity must hold
-   * `bigquery.jobs.create` on it.
+   * Project under which BQ jobs are created and billed. Defaults to ADC's
+   * quota project. Lets the caller read tables in another project (e.g.
+   * `mozdata`) while paying jobs out of a project where they have
+   * `bigquery.jobs.create`.
+   */
+  billingProject?: string;
+  /**
+   * Project the BigQuery client targets when no `billingProject` is set.
+   * Mostly a convenience to make the resolved project explicit in logs.
    */
   dataProject?: string;
   /**
@@ -37,7 +43,7 @@ interface DefineBigQuerySourceOptions<T> {
  *
  * - **Auth/billing** — the BigQuery client uses ADC (Workload Identity
  *   in GKE, application-default credentials locally) and bills jobs to
- *   the `dataProject`.
+ *   `billingProject` if set, otherwise the data project.
  * - **Null-strip** — BigQuery returns `null` for missing optional
  *   fields. Zod's `.optional()` permits `undefined` but not `null`, so
  *   every row is passed through a recursive null-strip before
@@ -57,7 +63,7 @@ export function defineBigQuerySource<T>(
   const bq =
     opts.bq ??
     new BigQuery({
-      projectId: opts.dataProject,
+      projectId: opts.billingProject ?? opts.dataProject,
     });
 
   return {

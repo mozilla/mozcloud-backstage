@@ -65,6 +65,7 @@ export const catalogModuleMozcloud = createBackendModule({
             project: string;
             dataset: string;
             table: string;
+            billingProject?: string;
           }>();
           const schedule = tenantsCfg.has('schedule')
             ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
@@ -75,6 +76,7 @@ export const catalogModuleMozcloud = createBackendModule({
             query: tenantsQuery(tenantsBq),
             schema: TenantRowSchema,
             description: `bigquery:${tenantsBq.project}.${tenantsBq.dataset}.${tenantsBq.table}`,
+            billingProject: tenantsBq.billingProject,
             dataProject: tenantsBq.project,
             normalize: normalizeTenantRow,
             logger,
@@ -91,11 +93,13 @@ export const catalogModuleMozcloud = createBackendModule({
               dataset: string;
               tenantsTable?: string;
               deployedChartsTable?: string;
+              billingProject?: string;
             }>();
             chartsSource = defineBigQuerySource({
               query: chartsDeploymentsQuery(chartsBq),
               schema: ChartDeploymentsRowSchema,
               description: chartsDeploymentsSourceDescription(chartsBq),
+              billingProject: chartsBq.billingProject,
               dataProject: chartsBq.project,
               logger,
             });
@@ -123,6 +127,7 @@ export const catalogModuleMozcloud = createBackendModule({
             project: string;
             dataset: string;
             workgroupsTable?: string;
+            billingProject?: string;
           }>();
           const schedule = wgCfg.has('schedule')
             ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
@@ -133,6 +138,7 @@ export const catalogModuleMozcloud = createBackendModule({
             query: workgroupsQuery(wgBq),
             schema: WorkgroupRowSchema,
             description: workgroupsSourceDescription(wgBq),
+            billingProject: wgBq.billingProject,
             dataProject: wgBq.project,
             logger,
           });
@@ -147,11 +153,13 @@ export const catalogModuleMozcloud = createBackendModule({
               project: string;
               dataset: string;
               subgroupMembersTable?: string;
+              billingProject?: string;
             }>();
             usersSource = defineBigQuerySource({
               query: usersQuery(usersBq),
               schema: UserRowSchema,
               description: usersSourceDescription(usersBq),
+              billingProject: usersBq.billingProject,
               dataProject: usersBq.project,
               logger,
             });
