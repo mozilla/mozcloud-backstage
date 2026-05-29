@@ -1,7 +1,10 @@
 import {
   LoggerService,
+  readSchedulerServiceTaskScheduleDefinitionFromConfig,
+  SchedulerService,
   SchedulerServiceTaskRunner,
 } from '@backstage/backend-plugin-api';
+import { Config } from '@backstage/config';
 import { Entity } from '@backstage/catalog-model';
 import {
   EntityProvider,
@@ -10,7 +13,25 @@ import {
 import { Source } from './sources/Source';
 import { workgroupToEntities } from './transform/workgroupToEntities';
 import { userToEntities } from './transform/userToEntities';
-import { UserRow, WorkgroupRow } from './transform/schema';
+import {
+  UserRow,
+  UserRowSchema,
+  WorkgroupRow,
+  WorkgroupRowSchema,
+} from './transform/schema';
+import { defineBigQuerySource } from './sources/BigQuerySource';
+import {
+  usersQuery,
+  usersSourceDescription,
+  workgroupsQuery,
+  workgroupsSourceDescription,
+} from './queries';
+
+const DEFAULT_SCHEDULE = {
+  frequency: { minutes: 30 },
+  timeout: { minutes: 5 },
+  initialDelay: { seconds: 30 },
+};
 
 /**
  * Catalog entity provider for Mozilla workgroups.
@@ -20,23 +41,24 @@ import { UserRow, WorkgroupRow } from './transform/schema';
  *    Drives Group entities (workgroup + subgroup), both in the
  *    `workgroups` namespace so they don't collide with the GitHub Org
  *    provider's Groups in `default`.
- *  - optional `users` source — one row per human user, with GitHub
+ *  - `users` source — one row per human user, with GitHub
  *    metadata and the `(workgroup, subgroup)` memberships they hold.
  *    Drives User entities in the `workgroups` namespace and back-fills
  *    each subgroup's `spec.members` so Group pages list humans.
- *
- * Without a users source the provider still emits Groups; subgroup
- * `spec.members` stays empty and no User entities are produced.
  */
 export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
 
+  readonly description: string;
+
   constructor(
-    private readonly source: Source<WorkgroupRow>,
+    private readonly workgroupsSource: Source<WorkgroupRow>,
+    private readonly usersSource: Source<UserRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
-    private readonly usersSource?: Source<UserRow>,
-  ) {}
+  ) {
+    this.description = `workgroups: ${workgroupsSource.description}, users: ${usersSource.description}`;
+  }
 
   getProviderName(): string {
     return 'MozcloudWorkgroupEntityProvider';
@@ -67,11 +89,11 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     }
 
     const [workgroups, users] = await Promise.all([
-      this.source.fetchAll(),
-      this.usersSource ? this.usersSource.fetchAll() : Promise.resolve([]),
+      this.workgroupsSource.fetchAll(),
+      this.usersSource.fetchAll(),
     ]);
 
-    const wgLocationRef = `mozcloud-workgroups:${this.source.description}`;
+    const wgLocationRef = `mozcloud-workgroups:${this.workgroupsSource.description}`;
     const userLocationRef = this.usersSource
       ? `mozcloud-users:${this.usersSource.description}`
       : wgLocationRef;
@@ -97,9 +119,64 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         merged.length
-      } entities from ${workgroups.length} workgroups${
-        this.usersSource ? ` and ${users.length} users` : ''
-      }`,
+      } entities from ${workgroups.length} workgroups and ${
+        users.length
+      } users`,
+    );
+  }
+
+  /**
+   * Build a provider from its `catalog.providers.mozcloud.workgroups`
+   * config block.
+   */
+  static createFromConfig(
+    config: Config,
+    logger: LoggerService,
+    scheduler: SchedulerService,
+  ): MozcloudWorkgroupEntityProvider {
+    const wgBq = config.getConfig('sources.workgroups.bigquery').get<{
+      project: string;
+      dataset: string;
+      workgroupsTable?: string;
+      billingProject?: string;
+    }>();
+    const workgroupsSource = defineBigQuerySource({
+      query: workgroupsQuery(wgBq),
+      schema: WorkgroupRowSchema,
+      description: workgroupsSourceDescription(wgBq),
+      billingProject: wgBq.billingProject,
+      dataProject: wgBq.project,
+      logger,
+    });
+
+    const usersCfg = config.getConfig('sources.users.bigquery');
+    const usersBq = usersCfg.get<{
+      project: string;
+      dataset: string;
+      subgroupMembersTable?: string;
+      billingProject?: string;
+    }>();
+    const usersSource = defineBigQuerySource({
+      query: usersQuery(usersBq),
+      schema: UserRowSchema,
+      description: usersSourceDescription(usersBq),
+      billingProject: usersBq.billingProject,
+      dataProject: usersBq.project,
+      logger,
+    });
+
+    const schedule = config.has('schedule')
+      ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
+          config.getConfig('schedule'),
+        )
+      : DEFAULT_SCHEDULE;
+    const taskRunner = scheduler.createScheduledTaskRunner(schedule);
+
+    return new MozcloudWorkgroupEntityProvider(
+      workgroupsSource,
+      usersSource,
+      logger,
+      taskRunner,
     );
   }
 }

@@ -6,16 +6,27 @@ import { Source } from './Source';
 interface DefineBigQuerySourceOptions<T> {
   /** Full SQL to execute, including any JOINs, CTEs, or projections. */
   query: string;
+
   /** Validated per row; bad rows are skipped and logged. */
   schema: ZodType<T, ZodTypeDef, unknown>;
+
   /** Stable identifier — used in log lines and as the provider's location key. */
   description: string;
+
   /**
-   * Project the BigQuery client targets. Jobs are created and billed
-   * against this project, so the calling identity must hold
-   * `bigquery.jobs.create` on it.
+   * Project under which BQ jobs are created and billed. Defaults to ADC's
+   * quota project. Lets the caller read tables in another project (e.g.
+   * `mozdata`) while paying jobs out of a project where they have
+   * `bigquery.jobs.create`.
+   */
+  billingProject?: string;
+
+  /**
+   * Project the BigQuery client targets when no `billingProject` is set.
+   * Mostly a convenience to make the resolved project explicit in logs.
    */
   dataProject?: string;
+
   /**
    * Optional pre-validation hook for BigQuery quirks the schema doesn't
    * handle directly — most commonly converting REPEATED RECORD columns
@@ -25,7 +36,9 @@ interface DefineBigQuerySourceOptions<T> {
    * normalize function sees a tree with no `null` values.
    */
   normalize?: (row: Record<string, unknown>) => unknown;
+
   logger: LoggerService;
+
   /** Injectable for tests; defaults to a freshly-constructed client. */
   bq?: BigQuery;
 }
@@ -37,7 +50,7 @@ interface DefineBigQuerySourceOptions<T> {
  *
  * - **Auth/billing** — the BigQuery client uses ADC (Workload Identity
  *   in GKE, application-default credentials locally) and bills jobs to
- *   the `dataProject`.
+ *   `billingProject` if set, otherwise the data project.
  * - **Null-strip** — BigQuery returns `null` for missing optional
  *   fields. Zod's `.optional()` permits `undefined` but not `null`, so
  *   every row is passed through a recursive null-strip before
@@ -57,7 +70,7 @@ export function defineBigQuerySource<T>(
   const bq =
     opts.bq ??
     new BigQuery({
-      projectId: opts.dataProject,
+      projectId: opts.billingProject ?? opts.dataProject,
     });
 
   return {

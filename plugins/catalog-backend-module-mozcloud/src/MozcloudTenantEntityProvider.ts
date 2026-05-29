@@ -1,7 +1,10 @@
 import {
   LoggerService,
+  readSchedulerServiceTaskScheduleDefinitionFromConfig,
+  SchedulerService,
   SchedulerServiceTaskRunner,
 } from '@backstage/backend-plugin-api';
+import { Config } from '@backstage/config';
 import { Entity } from '@backstage/catalog-model';
 import {
   EntityProvider,
@@ -10,7 +13,27 @@ import {
 import { Source } from './sources/Source';
 import { tenantToEntities } from './transform/tenantToEntities';
 import { chartToEntities } from './transform/chartToEntities';
-import { ChartDeploymentsRow, TenantRow } from './transform/schema';
+import {
+  ChartDeploymentsRow,
+  ChartDeploymentsRowSchema,
+  TenantRow,
+  TenantRowSchema,
+} from './transform/schema';
+import {
+  defineBigQuerySource,
+  normalizeTenantRow,
+} from './sources/BigQuerySource';
+import {
+  chartsDeploymentsQuery,
+  chartsDeploymentsSourceDescription,
+  tenantsQuery,
+} from './queries';
+
+const DEFAULT_SCHEDULE = {
+  frequency: { minutes: 30 },
+  timeout: { minutes: 5 },
+  initialDelay: { seconds: 30 },
+};
 
 /**
  * Catalog entity provider that turns rows from a {@link Source} (BigQuery
@@ -20,20 +43,24 @@ import { ChartDeploymentsRow, TenantRow } from './transform/schema';
  * next tick.
  *
  * The tenants source produces Domain / System / Resource entities via
- * {@link tenantToEntities}. The optional {@link ChartDeploymentsRow}
- * source produces the helm chart Components and helm-deployment
- * sub-Components via {@link chartToEntities}; each row carries the
- * tenant metadata it needs so the transform is row-local.
+ * {@link tenantToEntities}. The {@link ChartDeploymentsRow} source
+ * produces the helm chart Components and helm-deployment sub-Components
+ * via {@link chartToEntities}; each row carries the tenant metadata it
+ * needs so the transform is row-local.
  */
 export class MozcloudTenantEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
 
+  readonly description: string;
+
   constructor(
-    private readonly source: Source<TenantRow>,
+    private readonly tenantsSource: Source<TenantRow>,
+    private readonly chartsSource: Source<ChartDeploymentsRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
-    private readonly chartsSource?: Source<ChartDeploymentsRow>,
-  ) {}
+  ) {
+    this.description = `tenants: ${tenantsSource.description}, charts: ${chartsSource.description}`;
+  }
 
   getProviderName(): string {
     return 'MozcloudTenantEntityProvider';
@@ -63,14 +90,12 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     }
 
     const [tenants, charts] = await Promise.all([
-      this.source.fetchAll(),
-      this.chartsSource ? this.chartsSource.fetchAll() : Promise.resolve([]),
+      this.tenantsSource.fetchAll(),
+      this.chartsSource.fetchAll(),
     ]);
 
-    const tenantsLocationRef = `mozcloud:${this.source.description}`;
-    const chartsLocationRef = this.chartsSource
-      ? `mozcloud:${this.chartsSource.description}`
-      : tenantsLocationRef;
+    const tenantsLocationRef = `mozcloud:${this.tenantsSource.description}`;
+    const chartsLocationRef = `mozcloud:${this.chartsSource.description}`;
     const entities: Entity[] = [];
 
     for (const tenant of tenants) {
@@ -94,9 +119,67 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         deduped.length
-      } entities from ${tenants.length} tenants${
-        this.chartsSource ? ` (charts source: ${charts.length} rows)` : ''
-      }`,
+      } entities from ${tenants.length} tenants and ${
+        charts.length
+      } chart rows`,
+    );
+  }
+
+  /**
+   * Build a provider from its `catalog.providers.mozcloud.tenants` config
+   * block. Owns the wiring of both BigQuery sources, the task schedule,
+   * and the task runner so the registering module just hands the block
+   * over and registers the result.
+   */
+  static createFromConfig(
+    config: Config,
+    logger: LoggerService,
+    scheduler: SchedulerService,
+  ): MozcloudTenantEntityProvider {
+    const tenantsBq = config.getConfig('sources.tenants.bigquery').get<{
+      project: string;
+      dataset: string;
+      table: string;
+      billingProject?: string;
+    }>();
+    const tenantsSource = defineBigQuerySource({
+      query: tenantsQuery(tenantsBq),
+      schema: TenantRowSchema,
+      description: `bigquery:${tenantsBq.project}.${tenantsBq.dataset}.${tenantsBq.table}`,
+      billingProject: tenantsBq.billingProject,
+      dataProject: tenantsBq.project,
+      normalize: normalizeTenantRow,
+      logger,
+    });
+
+    const chartsBq = config.getConfig('sources.charts.bigquery').get<{
+      project: string;
+      dataset: string;
+      tenantsTable?: string;
+      deployedChartsTable?: string;
+      billingProject?: string;
+    }>();
+    const chartsSource = defineBigQuerySource({
+      query: chartsDeploymentsQuery(chartsBq),
+      schema: ChartDeploymentsRowSchema,
+      description: chartsDeploymentsSourceDescription(chartsBq),
+      billingProject: chartsBq.billingProject,
+      dataProject: chartsBq.project,
+      logger,
+    });
+
+    const schedule = config.has('schedule')
+      ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
+          config.getConfig('schedule'),
+        )
+      : DEFAULT_SCHEDULE;
+    const taskRunner = scheduler.createScheduledTaskRunner(schedule);
+
+    return new MozcloudTenantEntityProvider(
+      tenantsSource,
+      chartsSource,
+      logger,
+      taskRunner,
     );
   }
 }
