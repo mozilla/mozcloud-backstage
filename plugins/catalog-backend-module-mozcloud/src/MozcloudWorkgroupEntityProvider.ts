@@ -90,7 +90,7 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
 
     const [workgroups, users] = await Promise.all([
       this.workgroupsSource.fetchAll(),
-      this.usersSource ? this.usersSource.fetchAll() : Promise.resolve([]),
+      this.usersSource.fetchAll(),
     ]);
 
     const wgLocationRef = `mozcloud-workgroups:${this.workgroupsSource.description}`;
@@ -119,9 +119,9 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         merged.length
-      } entities from ${workgroups.length} workgroups${
-        this.usersSource ? ` and ${users.length} users` : ''
-      }`,
+      } entities from ${workgroups.length} workgroups and ${
+        users.length
+      } users`,
     );
   }
 
