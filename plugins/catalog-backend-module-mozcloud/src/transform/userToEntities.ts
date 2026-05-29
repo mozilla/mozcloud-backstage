@@ -74,12 +74,14 @@ export function userToEntities(user: UserRow, locationRef: string): Entity[] {
     m => `workgroups/${subgroupName(m.workgroup, m.subgroup)}`,
   );
 
+  const userName = user.name ?? user.email.split('@')[0]
+
   return [
     {
       apiVersion: 'backstage.io/v1alpha1',
       kind: 'User',
       metadata: {
-        name: emailToUserName(user.email),
+        name: emailToUserName(user.email), // This is to create a distinct user ref using email
         namespace: 'workgroups',
         annotations: baseAnn({
           'mozilla.org/email': user.email,
@@ -94,7 +96,7 @@ export function userToEntities(user: UserRow, locationRef: string): Entity[] {
       spec: {
         profile: {
           email: user.email,
-          displayName: user.name ?? user.email.split('@')[0],
+          displayName: userName,
           picture: gravatarUrl(user.email, user.name),
         },
         memberOf,

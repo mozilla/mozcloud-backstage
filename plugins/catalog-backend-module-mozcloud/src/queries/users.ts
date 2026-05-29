@@ -40,17 +40,19 @@ export function usersQuery(cfg: UsersQueryConfig): string {
     cfg.personDirectoryTable ?? DEFAULT_PERSON_DIRECTORY_TABLE
   }\``;
 
+  // NOTE: due to permission issues. we have temprorarily disabled the Full Name lookups
+  // from workday tables.
   return `
     WITH agg AS (
       SELECT
         m.value AS email,
-        MAX(p.name) AS name,
+        null AS name,
         MAX(m.github_login) AS github_login,
         ARRAY_CONCAT_AGG(m.github_orgs) AS github_orgs_concat,
         ARRAY_AGG(STRUCT(m.workgroup, m.subgroup) ORDER BY m.workgroup, m.subgroup) AS memberships
       FROM ${memTable} m
-      LEFT JOIN ${personTable} p
-        ON LOWER(p.email) = LOWER(m.value)
+      -- LEFT JOIN ${personTable} p
+      --   ON LOWER(p.email) = LOWER(m.value)
       WHERE m.member_type = 'user'
       GROUP BY m.value
     )
