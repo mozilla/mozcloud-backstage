@@ -209,49 +209,53 @@ catalog:
   providers:
     mozcloud:
       tenants:
-        bigquery:
-          project: mozdata
-          dataset: mozcloud
-          table: tenants
-          # Bill jobs to a project the local user has bigquery.jobs.create on;
-          # `mozdata` is read-only for most analysts.
-          billingProject: moz-fx-backstage-nonprod
+        sources:
+          # Reads `mozdata.mozcloud.tenants` directly.
+          # Derives Domain, System (tenant) and Services.
+          tenants:
+            bigquery:
+              project: mozdata
+              dataset: mozcloud
+              table: tenants
+              billingProject: moz-fx-backstage-nonprod
+          # Joins `tenants.globals.deployment.charts[]` with
+          # `tenants_deployed_charts` to produce one row per (tenant, chart)
+          # carrying the declared chart metadata + the actual deployment
+          # tree (realm -> environments -> regions). Consumed by the
+          # tenant entity provider as a second source to enrich chart
+          # Components with deployment annotations.
+          charts:
+            bigquery:
+              project: mozdata
+              dataset: mozcloud
+              billingProject: moz-fx-backstage-nonprod
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
-      charts:
-        # Joins `tenants.globals.deployment.charts[]` with
-        # `tenants_deployed_charts` to produce one row per (tenant, chart)
-        # carrying the declared chart metadata + the actual deployment
-        # tree (realm -> environments -> regions). Consumed by the
-        # tenant entity provider as a second source to enrich chart
-        # Components with deployment annotations.
-        bigquery:
-          project: mozdata
-          dataset: mozcloud
-          billingProject: moz-fx-backstage-nonprod
       workgroups:
-        # Reads `mozdata.mozcloud.workgroups` directly (one row per
-        # workgroup with nested subgroups). Drives Group entities only;
-        # human users come from the `users` source below.
-        bigquery:
-          project: mozdata
-          dataset: mozcloud
-          billingProject: moz-fx-backstage-nonprod
+        sources:
+          # Reads `mozdata.mozcloud.workgroups` directly (one row per
+          # workgroup with nested subgroups). Drives Group entities only;
+          # human users come from the `users` source below.
+          workgroups:
+            bigquery:
+              project: mozdata
+              dataset: mozcloud
+              billingProject: moz-fx-backstage-nonprod
+          # Aggregates `mozdata.mozcloud.workgroup_subgroup_members` (where
+          # `member_type='user'`) into one row per human with GitHub
+          # identity and their (workgroup, subgroup) memberships. Drives
+          # User entities and back-fills subgroup Group `spec.members`.
+          users:
+            bigquery:
+              project: mozdata
+              dataset: mozcloud
+              billingProject: moz-fx-backstage-nonprod
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
-      users:
-        # Aggregates `mozdata.mozcloud.workgroup_subgroup_members` (where
-        # `member_type='user'`) into one row per human with GitHub
-        # identity and their (workgroup, subgroup) memberships. Drives
-        # User entities and back-fills subgroup Group `spec.members`.
-        bigquery:
-          project: mozdata
-          dataset: mozcloud
-          billingProject: moz-fx-backstage-nonprod
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

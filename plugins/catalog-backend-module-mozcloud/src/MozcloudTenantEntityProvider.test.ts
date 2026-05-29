@@ -9,7 +9,7 @@ import {
 } from '@backstage/backend-plugin-api';
 import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { Source } from './sources/Source';
-import { TenantRow } from './transform/schema';
+import { ChartDeploymentsRow, TenantRow } from './transform/schema';
 
 const TENANT_A: TenantRow = {
   globals: {
@@ -41,9 +41,11 @@ const TENANT_B: TenantRow = {
   realms: {},
 };
 
-class FakeSource implements Source<TenantRow> {
-  description = 'fake:in-memory';
-  constructor(private readonly rows: TenantRow[]) {}
+class FakeSource<T> implements Source<T> {
+  constructor(
+    public readonly description: string,
+    private readonly rows: T[],
+  ) {}
   async fetchAll() {
     return this.rows;
   }
@@ -66,7 +68,8 @@ describe('MozcloudTenantEntityProvider', () => {
     };
 
     const provider = new MozcloudTenantEntityProvider(
-      new FakeSource([TENANT_A, TENANT_B]),
+      new FakeSource<TenantRow>('fake-tenants:in-memory', [TENANT_A, TENANT_B]),
+      new FakeSource<ChartDeploymentsRow>('fake-charts:in-memory', []),
       mockServices.logger.mock(),
       new ImmediateTaskRunner(),
     );
@@ -85,7 +88,7 @@ describe('MozcloudTenantEntityProvider', () => {
         }`,
     );
 
-    // With no chartsSource configured, only tenant-level entities are emitted:
+    // With an empty charts source, only tenant-level entities are emitted:
     // 1 dedup'd Domain + 2 Systems + 1 Resource (TENANT_A's prod realm).
     // Chart Components are emitted by chartToEntities, exercised separately.
     expect(refs).toEqual(
@@ -123,7 +126,8 @@ describe('MozcloudTenantEntityProvider', () => {
     };
 
     const provider = new MozcloudTenantEntityProvider(
-      new FakeSource([]),
+      new FakeSource<TenantRow>('fake-tenants:in-memory', []),
+      new FakeSource<ChartDeploymentsRow>('fake-charts:in-memory', []),
       mockServices.logger.mock(),
       new ImmediateTaskRunner(),
     );
