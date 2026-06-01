@@ -22,10 +22,11 @@ const DEFAULT_PERSON_DIRECTORY_TABLE = 'mozdata.workday.person_mozilla_com';
  * - Display name (`name`) — LEFT JOINed from the Workday person directory
  *   so non-employees (gmail, contractor addresses, etc.) get NULL rather
  *   than the lookup failing the whole query.
- * - GitHub identity (`github_login`, `github_orgs`) — per-user, the same
- *   across every membership row for that user. We pick a representative
- *   non-null `github_login` via `MAX` and union `github_orgs` across rows
- *   so the result tolerates partial backfills.
+ * - GitHub identity (`github_login`, `github_node_id`, `github_orgs`) —
+ *   per-user, the same across every membership row for that user. We
+ *   pick a representative non-null `github_login` / `github_node_id` via
+ *   `MAX` and union `github_orgs` across rows so the result tolerates
+ *   partial backfills.
  * - `memberships[]` — every `(workgroup, subgroup)` the user belongs to,
  *   sorted for deterministic output.
  *
@@ -48,6 +49,7 @@ export function usersQuery(cfg: UsersQueryConfig): string {
         m.value AS email,
         null AS name,
         MAX(m.github_login) AS github_login,
+        MAX(m.github_node_id) AS github_node_id,
         ARRAY_CONCAT_AGG(m.github_orgs) AS github_orgs_concat,
         ARRAY_AGG(STRUCT(m.workgroup, m.subgroup) ORDER BY m.workgroup, m.subgroup) AS memberships
       FROM ${memTable} m
@@ -60,6 +62,7 @@ export function usersQuery(cfg: UsersQueryConfig): string {
       email,
       name,
       github_login,
+      github_node_id,
       ARRAY(
         SELECT DISTINCT o FROM UNNEST(github_orgs_concat) o ORDER BY o
       ) AS github_orgs,

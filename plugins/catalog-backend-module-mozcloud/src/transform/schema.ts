@@ -129,6 +129,7 @@ export const UserRowSchema = z
     email: z.string(),
     name: z.string().nullable().optional(),
     github_login: z.string().nullable().optional(),
+    github_node_id: z.string().nullable().optional(),
     github_orgs: z.array(z.string()).default([]),
     memberships: z.array(UserMembershipSchema).default([]),
   })

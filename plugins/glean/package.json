@@ -25,8 +25,8 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@backstage/frontend-plugin-api": "^0.16.0",
-    "@backstage/plugin-app-react": "^0.2.2",
+    "@backstage/frontend-plugin-api": "^0.17.1",
+    "@backstage/plugin-app-react": "^0.2.3",
     "@backstage/types": "^1.2.2",
     "@mozilla/glean": "^5.0.8",
     "react-router-dom": "^6.27.0",
@@ -36,10 +36,10 @@
     "react": "^16.13.1 || ^17.0.0 || ^18.0.0"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.36.1",
-    "@backstage/core-app-api": "^1.20.0",
-    "@backstage/dev-utils": "^1.1.22",
-    "@backstage/test-utils": "^1.7.17",
+    "@backstage/cli": "^0.36.2",
+    "@backstage/core-app-api": "^1.20.1",
+    "@backstage/dev-utils": "^1.1.23",
+    "@backstage/test-utils": "^1.7.18",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",
