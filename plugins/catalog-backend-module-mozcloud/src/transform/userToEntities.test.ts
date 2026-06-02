@@ -11,6 +11,7 @@ const baseRow = (overrides: Partial<UserRow> = {}): UserRow => ({
   email: 'alice@mozilla.com',
   name: 'Alice Anderson',
   github_login: 'alicegithub',
+  github_node_id: 'U_kgDOABCDEF',
   github_orgs: ['mozilla', 'mozilla-services'],
   memberships: [
     { workgroup: 'fxa', subgroup: 'developers' },
@@ -61,6 +62,7 @@ describe('userToEntities', () => {
     const ann = user.metadata.annotations ?? {};
     expect(ann['mozilla.org/email']).toBe('alice@mozilla.com');
     expect(ann['github.com/user-login']).toBe('alicegithub');
+    expect(ann['github.com/user-id']).toBe('U_kgDOABCDEF');
     expect(ann['mozilla.org/github-orgs']).toBe('mozilla,mozilla-services');
     expect(ann['backstage.io/managed-by-location']).toBe(LOCATION);
     expect(ann['backstage.io/managed-by-origin-location']).toBe(LOCATION);
@@ -68,11 +70,16 @@ describe('userToEntities', () => {
 
   it('omits github annotations when the user has no github metadata', () => {
     const [user] = userToEntities(
-      baseRow({ github_login: undefined, github_orgs: [] }),
+      baseRow({
+        github_login: undefined,
+        github_node_id: undefined,
+        github_orgs: [],
+      }),
       LOCATION,
     );
     const ann = user.metadata.annotations ?? {};
     expect(ann).not.toHaveProperty('github.com/user-login');
+    expect(ann).not.toHaveProperty('github.com/user-id');
     expect(ann).not.toHaveProperty('mozilla.org/github-orgs');
   });
 
@@ -93,6 +100,11 @@ describe('userToEntities', () => {
     expect(user.metadata.annotations).not.toHaveProperty(
       'github.com/user-login',
     );
+  });
+
+  it('handles github_node_id being explicitly null (BQ null path)', () => {
+    const [user] = userToEntities(baseRow({ github_node_id: null }), LOCATION);
+    expect(user.metadata.annotations).not.toHaveProperty('github.com/user-id');
   });
 
   describe('gravatar picture', () => {

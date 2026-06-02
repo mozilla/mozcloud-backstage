@@ -86,6 +86,7 @@ export function userToEntities(user: UserRow, locationRef: string): Entity[] {
         annotations: baseAnn({
           'mozilla.org/email': user.email,
           'github.com/user-login': user.github_login ?? undefined,
+          'github.com/user-id': user.github_node_id ?? undefined,
           'mozilla.org/github-orgs':
             user.github_orgs.length > 0
               ? user.github_orgs.join(',')

@@ -201,6 +201,8 @@ auth:
       userEntityRef: user:workgroups/wstuckey-mozilla-com
       ownershipEntityRefs:
         - user:workgroups/wstuckey-mozilla-com
+  experimentalClientIdMetadataDocuments:
+    enabled: true
 
 # scaffolder:
 # see https://backstage.io/docs/features/software-templates/configuration for software template options
