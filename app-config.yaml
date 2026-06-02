@@ -139,6 +139,10 @@ backend:
   listen:
     port: 7007
 
+  actions:
+    pluginSources:
+      - catalog
+
   csp:
     connect-src: ["'self'", 'http:', 'https:']
 
@@ -276,3 +280,12 @@ catalog:
 permission:
   # setting this to `false` will disable permissions
   enabled: true
+
+mcpActions:
+  servers:
+    catalog:
+      name: 'Mozilla Service Catalog'
+      description: 'Tools for interacting with the software catalog'
+      filter:
+        include:
+          - id: 'catalog:*'
