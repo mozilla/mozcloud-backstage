@@ -89,11 +89,6 @@ export const DeploymentCard = () => {
                 <OpenInNewIcon fontSize="inherit" />
               </div>
             ))}
-            <Typography variant="caption" color="textSecondary">
-              One link per region this tenant is configured to deploy to — not
-              all regions necessarily exist for every chart, so 404s are
-              expected for unused regions.
-            </Typography>
           </Grid>
         )}
       </Grid>

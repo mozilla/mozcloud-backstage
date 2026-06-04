@@ -35,11 +35,21 @@ app:
         config:
           showLinks: true
 
+    - entity-card:catalog/about:
+        config:
+          type: info
+          filter:
+            $not: { kind: { $in: [Group, User] } }
+
     - entity-card:catalog/links:
         config:
           type: info
 
     - entity-card:catalog/gcp-project:
+        config:
+          type: content
+
+    - entity-card:catalog/mozcloud-chart:
         config:
           type: content
 
@@ -49,17 +59,6 @@ app:
     - entity-card:org/members-list:
         config:
           type: info
-
-    # Hide stock catalog relation cards (Depends on..., Has...) when the
-    # entity has no relations of that type. Defaults only gate on `kind`,
-    # so they render empty "No X" tables for every entity. `$contains`
-    # over `relations` keeps the extension from instantiating unless the
-    # entity has at least one matching relation.
-    - entity-card:catalog/about:
-        config:
-          type: info
-          filter:
-            $not: { kind: { $in: [Group, User] } }
 
     - entity-card:org/ownership:
         config:
@@ -102,6 +101,7 @@ app:
                 targetRef: { $hasPrefix: 'resource:' }
     - entity-card:catalog/has-subcomponents:
         config:
+          type: info
           filter:
             kind: component
             relations:
