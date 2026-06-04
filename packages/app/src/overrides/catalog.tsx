@@ -41,7 +41,7 @@ const chartCard = EntityCardBlueprint.make({
       'spec.type': 'service',
       'metadata.annotations.mozilla.org/chart-name': { $exists: true },
     },
-    type: 'info',
+    type: 'content',
     loader: async () => {
       const { ChartCard } = await import('../components/catalog/ChartCard');
       return <ChartCard />;
