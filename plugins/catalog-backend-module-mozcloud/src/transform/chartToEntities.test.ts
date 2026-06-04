@@ -61,6 +61,12 @@ describe('chartToEntities', () => {
       );
     });
 
+    it('defaults the Grafana dashboard selector to the chart name', () => {
+      expect(
+        services[0].metadata.annotations?.['grafana/dashboard-selector'],
+      ).toBe('backstage');
+    });
+
     it('emits one helm-deployment Component per (realm, environment)', () => {
       expect(deployments.map(d => d.metadata.name).sort()).toEqual([
         'backstage-prod',

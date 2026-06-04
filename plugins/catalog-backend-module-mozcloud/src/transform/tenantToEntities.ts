@@ -72,6 +72,8 @@ export function tenantToEntities(
         'mozilla.org/risk-uuid': tenant.globals.risk_uuid,
         'mozilla.org/cluster-type': tenant.globals.cluster_type,
         'mozilla.org/slack-channel': tenant.globals.slack_channel,
+        'grafana/dashboard-selector': `tags @> 'app_code=${sysName}'`,
+        'grafana/alert-label-selector': `app_code=${sysName}`,
       }),
     },
     spec: { owner, domain: tenant.globals.function },
