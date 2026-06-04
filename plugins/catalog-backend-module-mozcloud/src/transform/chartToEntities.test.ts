@@ -340,4 +340,75 @@ describe('chartToEntities', () => {
       }
     });
   });
+
+  describe('entity links', () => {
+    const entities = chartToEntities(baseRow(), LOCATION);
+    const service = entities.find(
+      e => (e.spec as { type?: string }).type === 'service',
+    )!;
+    const deployments = entities.filter(
+      e => (e.spec as { type?: string }).type === 'helm-deployment',
+    );
+    const linkUrl = (e: (typeof entities)[number], title: string) =>
+      (e.metadata.links ?? []).find(l => l.title === title)?.url;
+    const argoLinks = (e: (typeof entities)[number]) =>
+      (e.metadata.links ?? []).filter(l =>
+        (l.title ?? '').startsWith('ArgoCD:'),
+      );
+
+    it('links the service to its Helm chart directory in <function>-infra', () => {
+      expect(linkUrl(service, 'Helm chart')).toBe(
+        'https://github.com/mozilla/webservices-infra/tree/main/backstage/k8s/backstage',
+      );
+    });
+
+    it('adds an ArgoCD link per (environment, region) at the service level', () => {
+      expect(
+        argoLinks(service)
+          .map(l => l.title)
+          .sort(),
+      ).toEqual(['ArgoCD: prod (us-west1)', 'ArgoCD: stage (us-west1)']);
+      expect(linkUrl(service, 'ArgoCD: stage (us-west1)')).toBe(
+        'https://webservices.argocd.global.mozgcp.net/applications/argocd-webservices/backstage-stage-us-west1-backstage?view=tree&resource=',
+      );
+    });
+
+    it('links each helm-deployment to the chart dir and its env values file', () => {
+      const stage = deployments.find(
+        d => d.metadata.name === 'backstage-stage',
+      )!;
+      expect(linkUrl(stage, 'Helm chart')).toBe(
+        'https://github.com/mozilla/webservices-infra/tree/main/backstage/k8s/backstage',
+      );
+      expect(linkUrl(stage, 'Values (stage)')).toBe(
+        'https://github.com/mozilla/webservices-infra/blob/main/backstage/k8s/backstage/values-stage.yaml',
+      );
+    });
+
+    it('emits one ArgoCD service link per region when multi-region', () => {
+      const multi = chartToEntities(
+        baseRow({
+          deployments: [
+            { realm: 'prod', environment: 'prod', region: 'us-west1' },
+            { realm: 'prod', environment: 'prod', region: 'europe-west1' },
+          ],
+        }),
+        LOCATION,
+      ).find(e => (e.spec as { type?: string }).type === 'service')!;
+      expect(argoLinks(multi).map(l => l.title)).toEqual([
+        'ArgoCD: prod (us-west1)',
+        'ArgoCD: prod (europe-west1)',
+      ]);
+    });
+
+    it('gives non-argocd services only the Helm chart link (no ArgoCD links)', () => {
+      const gha = chartToEntities(
+        baseRow({ deployment_type: 'gha' }),
+        LOCATION,
+      ).find(e => (e.spec as { type?: string }).type === 'service')!;
+      expect((gha.metadata.links ?? []).map(l => l.title)).toEqual([
+        'Helm chart',
+      ]);
+    });
+  });
 });
