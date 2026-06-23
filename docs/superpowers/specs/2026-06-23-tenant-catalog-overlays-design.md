@@ -44,7 +44,7 @@ This was chosen over:
 
 ## File location & convention
 
-- Path: `mozilla/{function}-infra/tenants/{app_code}/catalog-info.yaml`.
+- Path: `mozilla/{function}-infra/{app_code}/catalog-info.yaml`.
 - Deterministic — the provider already knows `function` and `app_code` for each
   tenant from BigQuery, so it constructs the exact URL. No repo crawling.
 - Configurable via templated strings in `app-config.yaml` under
@@ -58,7 +58,7 @@ This was chosen over:
           overlay:
             enabled: true
             repoUrlTemplate: "https://github.com/mozilla/{function}-infra"
-            pathTemplate: "tenants/{app_code}/catalog-info.yaml"
+            pathTemplate: "{app_code}/catalog-info.yaml"
             branch: main
   ```
 
@@ -77,7 +77,7 @@ For each entity document in the overlay file:
    Otherwise → **new entity**.
 
 2. **Tenant scope guard.** An override target must belong to *this* tenant
-   (its `app_code` / System). A file at `tenants/{app_code}/` may only touch
+   (its `app_code` / System). A file at `{app_code}/` may only touch
    entities of that tenant. Cross-tenant or unknown override targets are
    **ignored and logged at `warn`**. New entities are auto-stamped:
    - `spec.system = {app_code}` (forced — a new entity always joins this
@@ -161,7 +161,7 @@ Sketch:
   over existing Systems), and the kind of addition (e.g. enrich the System,
   add an API entity, add a Component).
 - Action: render the skeleton to
-  `tenants/{app_code}/catalog-info.yaml` in `{function}-infra` and open a PR via
+  `{app_code}/catalog-info.yaml` in `{function}-infra` and open a PR via
   the GitHub scaffolder actions (`publish:github:pull-request`), matching the
   overlay path convention this design establishes.
 - Prerequisite: the scaffolder template location in `app-config.yaml` is
