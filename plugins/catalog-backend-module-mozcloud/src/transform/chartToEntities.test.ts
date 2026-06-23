@@ -61,10 +61,14 @@ describe('chartToEntities', () => {
       );
     });
 
-    it('defaults the Grafana dashboard selector to the chart name', () => {
-      expect(
-        services[0].metadata.annotations?.['grafana/dashboard-selector'],
-      ).toBe('backstage');
+    it('sets the Grafana selectors from the app_code and component_code tags', () => {
+      const ann = services[0].metadata.annotations ?? {};
+      expect(ann['grafana/dashboard-selector']).toBe(
+        "tags @> 'app_code=backstage' && tags == 'component_code=backstage'",
+      );
+      expect(ann['grafana/alert-label-selector']).toBe(
+        'app_code=backstage, component_code=backstage',
+      );
     });
 
     it('emits one helm-deployment Component per (realm, environment)', () => {
