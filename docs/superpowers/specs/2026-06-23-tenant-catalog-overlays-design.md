@@ -145,9 +145,33 @@ Unit tests, run with `backstage-cli package test --no-watch`:
 - `parseOverlay`: malformed YAML → skipped; multi-doc parsed; invalid entity
   doc skipped + logged.
 
+## Follow-up: scaffolder template for overlays
+
+After the provider-side overlay ingestion ships, add a Backstage software
+template that lets owners create or seed an overlay file through the UI instead
+of hand-authoring YAML and opening a PR manually. Tracked as a separate
+spec → plan → implementation cycle, not part of this design.
+
+Sketch:
+
+- New template under `scaffolder-templates/create-tenant-overlay/`
+  (`template.yaml` + a `skeleton/catalog-info.yaml.njk`), following the existing
+  `create-rfc` template structure.
+- Parameters: target tenant (`app_code` / `function`, ideally an entity picker
+  over existing Systems), and the kind of addition (e.g. enrich the System,
+  add an API entity, add a Component).
+- Action: render the skeleton to
+  `tenants/{app_code}/catalog-info.yaml` in `{function}-infra` and open a PR via
+  the GitHub scaffolder actions (`publish:github:pull-request`), matching the
+  overlay path convention this design establishes.
+- Prerequisite: the scaffolder template location in `app-config.yaml` is
+  currently commented out (`catalog.locations` → `scaffolder-templates/*/template.yaml`)
+  and would need enabling.
+
 ## Out of scope
 
 - Overlays for workgroups / users (`MozcloudWorkgroupEntityProvider`).
 - Native GitHub discovery of app-repo `catalog-info.yaml` files (possible future
   hybrid).
-- A UI for authoring or previewing overlays.
+- A UI for authoring or previewing overlays (covered by the scaffolder template
+  follow-up above).
