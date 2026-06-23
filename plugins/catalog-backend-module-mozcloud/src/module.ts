@@ -23,9 +23,10 @@ export const catalogModuleMozcloud = createBackendModule({
         catalog: catalogProcessingExtensionPoint,
         config: coreServices.rootConfig,
         logger: coreServices.logger,
+        reader: coreServices.urlReader,
         scheduler: coreServices.scheduler,
       },
-      async init({ catalog, config, logger, scheduler }) {
+      async init({ catalog, config, logger, reader, scheduler }) {
         const root = config.getOptionalConfig('catalog.providers.mozcloud');
         if (!root) {
           logger.info(
@@ -39,6 +40,7 @@ export const catalogModuleMozcloud = createBackendModule({
           const provider = MozcloudTenantEntityProvider.createFromConfig(
             tenantsCfg,
             logger,
+            reader,
             scheduler,
           );
           catalog.addEntityProvider(provider);
