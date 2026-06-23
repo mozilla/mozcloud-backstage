@@ -61,6 +61,16 @@ describe('chartToEntities', () => {
       );
     });
 
+    it('sets the Grafana selectors from the app_code and component_code tags', () => {
+      const ann = services[0].metadata.annotations ?? {};
+      expect(ann['grafana/dashboard-selector']).toBe(
+        "tags @> 'app_code=backstage' && tags == 'component_code=backstage'",
+      );
+      expect(ann['grafana/alert-label-selector']).toBe(
+        'app_code=backstage, component_code=backstage',
+      );
+    });
+
     it('emits one helm-deployment Component per (realm, environment)', () => {
       expect(deployments.map(d => d.metadata.name).sort()).toEqual([
         'backstage-prod',

@@ -66,6 +66,13 @@ app:
           initialRelationAggregation: aggregated
           filter: { kind: { $in: [Group, User] } }
 
+    - entity-card:grafana/dashboards:
+        config:
+          type: content
+          filter: { kind: { $in: [Component, System] } }
+
+    - entity-card:grafana/alerts: false
+
     - entity-card:api-docs/provided-apis:
         config:
           filter: { spec.providesApis: { $exists: true } }
@@ -85,6 +92,7 @@ app:
     # the parent. The `spec.*` predicate misses that.
     - entity-card:catalog/has-components:
         config:
+          type: info
           filter:
             kind: system
             relations:
@@ -93,6 +101,7 @@ app:
                 targetRef: { $hasPrefix: 'component:' }
     - entity-card:catalog/has-resources:
         config:
+          type: info
           filter:
             kind: system
             relations:
@@ -174,13 +183,26 @@ integrations:
     #   apiBaseUrl: https://ghe.example.net/api/v3
     #   token: ${GHE_TOKEN}
 
-# proxy:
-### Example for how to add a proxy endpoint for the frontend.
-### A typical reason to do this is to handle HTTPS and CORS for internal services.
-# endpoints:
-#   '/test':
-#     target: 'https://example.com'
-#     changeOrigin: true
+proxy:
+  endpoints:
+    # Grafana sits behind IAP. In deployed environments the backend reaches it
+    # over the cluster-internal URL (no IAP) with a service-account token. For
+    # local dev, point GRAFANA_INTERNAL_URL at a `kubectl port-forward` of the
+    # Grafana service (these env vars are unset locally by default, like the
+    # GitHub/Postgres ones above).
+    '/grafana/api':
+      target: ${GRAFANA_INTERNAL_URL}
+      headers:
+        Authorization: Bearer ${GRAFANA_TOKEN}
+        # Host: ${GRAFANA_PUBLIC_URL}
+
+# @backstage-community/plugin-grafana. `domain` is the user-facing (public,
+# IAP-protected) Grafana URL used to build clickable dashboard links — the
+# browser reaches it with the user's existing IAP session. API calls go via
+# the internal proxy endpoint above, so IAP is never in the backend's path.
+grafana:
+  domain: ${GRAFANA_PUBLIC_URL}
+  unifiedAlerting: true
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs

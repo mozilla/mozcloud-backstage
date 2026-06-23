@@ -167,6 +167,9 @@ export function chartToEntities(
           autoUpdate === undefined ? undefined : String(autoUpdate),
         'mozilla.org/image-aliases':
           imageAliases.length > 0 ? imageAliases.join(',') : undefined,
+        // Grafana dashboard selector so the Grafana dashboards/alerts
+        'grafana/dashboard-selector': `tags @> 'app_code=${sysName}' && tags == 'component_code=${componentName}'`,
+        'grafana/alert-label-selector': `app_code=${sysName}, component_code=${componentName}`,
       }),
       links: serviceLinks,
     },
