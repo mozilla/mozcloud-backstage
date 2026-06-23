@@ -99,7 +99,7 @@ function mergeEntity(base: Entity, overlay: Entity): Entity {
     out.spec = deepMergeMaps(
       (out.spec ?? {}) as Record<string, unknown>,
       overlay.spec as Record<string, unknown>,
-    );
+    ) as Entity['spec'];
   }
   return out;
 }
@@ -110,7 +110,7 @@ function stampNewEntity(entity: Entity, scope: TenantScope): Entity {
   const spec = (out.spec ?? {}) as Record<string, unknown>;
   spec.system = scope.appCode; // forced — a new entity always joins this tenant
   if (spec.owner === undefined) spec.owner = scope.owner;
-  out.spec = spec;
+  out.spec = spec as Entity['spec'];
   return out;
 }
 

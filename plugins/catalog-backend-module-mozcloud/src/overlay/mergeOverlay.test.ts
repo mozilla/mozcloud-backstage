@@ -46,7 +46,7 @@ describe('belongsToTenant', () => {
     expect(belongsToTenant(generated()[0], 'merino')).toBe(true);
   });
   it('matches an entity via spec.system', () => {
-    const c = { kind: 'Component', metadata: { name: 'svc' }, spec: { system: 'merino' } } as Entity;
+    const c = { kind: 'Component', metadata: { name: 'svc' }, spec: { system: 'merino' } } as unknown as Entity;
     expect(belongsToTenant(c, 'merino')).toBe(true);
   });
   it('rejects another tenant', () => {
