@@ -71,7 +71,8 @@ function deepMergeMaps(
 /**
  * Merge an overlay document onto a generated entity. Identity fields
  * (`kind`, `metadata.name`, `metadata.namespace`, `apiVersion`) are taken
- * from the base. `metadata.annotations` deep-merges (overlay keys win),
+ * from the base. `metadata.annotations` is key-merged (overlay keys win;
+ * a one-level spread, since annotation values are strings),
  * `metadata.tags`/`metadata.links` append+dedup, every other metadata key
  * and all of `spec` follow last-writer-wins with overlay winning.
  */
