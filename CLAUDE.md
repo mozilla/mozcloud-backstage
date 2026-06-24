@@ -65,12 +65,12 @@ refresh, so the catalog engine prunes removed entities automatically.
 
 **Terminology gap** (matters when reading code vs. talking to service owners):
 
-| Owner term       | Backstage / pipeline term            |
-| ---------------- | ------------------------------------ |
-| service / app    | **System** (a "tenant" in BigQuery)  |
-| team             | **Group** (a "workgroup")            |
-| deployment       | **Component**                        |
-| GCP project      | **Resource** (`gcp-project`)         |
+| Owner term    | Backstage / pipeline term           |
+| ------------- | ----------------------------------- |
+| service / app | **System** (a "tenant" in BigQuery) |
+| team          | **Group** (a "workgroup")           |
+| deployment    | **Component**                       |
+| GCP project   | **Resource** (`gcp-project`)        |
 
 Owner-authored `catalog-info.yaml` overlays (enrich/add to a tenant's entities)
 are designed in `docs/superpowers/specs/2026-06-23-tenant-catalog-overlays-design.md`.
