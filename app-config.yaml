@@ -1,5 +1,5 @@
 app:
-  title: moz backstage app
+  title: Mozcloud Service Catalog
   baseUrl: http://localhost:3000
   analytics:
     glean:
