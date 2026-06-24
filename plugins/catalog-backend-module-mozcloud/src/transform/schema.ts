@@ -139,6 +139,25 @@ export type UserRow = z.infer<typeof UserRowSchema>;
 export type UserMembership = z.infer<typeof UserMembershipSchema>;
 
 /**
+ * Unwrapped CIS Person API profile (after {@link unwrapCisProfile} flattens
+ * each field's `{ value }` wrapper). Only the fields the catalog needs are
+ * modeled; zod strips the rest. `primary_email` is required — a profile
+ * without one is skipped.
+ */
+export const PersonProfileRowSchema = z
+  .object({
+    user_id: z.string(),
+    primary_email: z.string(),
+    primary_username: z.string().nullable().optional(),
+    first_name: z.string().nullable().optional(),
+    last_name: z.string().nullable().optional(),
+    picture: z.string().nullable().optional(),
+  })
+  .strip();
+
+export type PersonProfileRow = z.infer<typeof PersonProfileRowSchema>;
+
+/**
  * Row shape returned by `chartsDeploymentsQuery`. One row per
  * `(tenant, chart_name)` combining the chart's declared image refs from
  * `tenants.globals.deployment.charts[]` with the flat deployment facts
