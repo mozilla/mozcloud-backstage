@@ -10,6 +10,8 @@ import {
 const scope: TenantScope = {
   appCode: 'merino',
   owner: 'group:workgroups/merino',
+  location:
+    'url:https://github.com/mozilla/webservices-infra/blob/main/merino/catalog-info.yaml',
 };
 const logger = () => mockServices.logger.mock();
 
@@ -145,6 +147,10 @@ describe('mergeOverlayEntities', () => {
     const api = out.find(e => e.metadata.name === 'merino-suggest')!;
     expect((api.spec as any).system).toBe('merino');
     expect((api.spec as any).owner).toBe('group:workgroups/merino');
+    expect(api.metadata.annotations).toEqual({
+      'backstage.io/managed-by-location': scope.location,
+      'backstage.io/managed-by-origin-location': scope.location,
+    });
     expect(out).toHaveLength(3);
   });
 

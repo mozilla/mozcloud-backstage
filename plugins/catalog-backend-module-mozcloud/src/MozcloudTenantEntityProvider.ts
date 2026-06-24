@@ -34,6 +34,7 @@ import { parseOverlay } from './overlay/parseOverlay';
 import { mergeOverlayEntities, TenantScope } from './overlay/mergeOverlay';
 import {
   fetchTenantOverlay,
+  overlayUrl,
   readOverlayConfig,
   OverlayConfig,
 } from './overlay/fetchTenantOverlay';
@@ -159,6 +160,10 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       const scope: TenantScope = {
         appCode,
         owner: tenantOwner(tenant.globals.workgroups),
+        location: `url:${overlayUrl(this.overlay, {
+          function: fn,
+          app_code: appCode,
+        })}`,
       };
       try {
         const content = await fetchTenantOverlay(

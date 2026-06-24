@@ -7,6 +7,13 @@ export interface TenantScope {
   appCode: string;
   /** Default owner ref for new entities that don't set one. */
   owner: string;
+  /**
+   * Location ref (e.g. `url:https://github.com/.../catalog-info.yaml`) of the
+   * overlay file. Stamped onto new entities as their managed-by-location so the
+   * catalog can trace them back to the overlay, matching what the BigQuery
+   * transforms set on generated entities.
+   */
+  location: string;
 }
 
 /** `kind:namespace/name`, lowercased, namespace defaulting to `default`. */
@@ -115,6 +122,14 @@ function stampNewEntity(entity: Entity, scope: TenantScope): Entity {
   spec.system = scope.appCode; // forced — a new entity always joins this tenant
   if (spec.owner === undefined) spec.owner = scope.owner;
   out.spec = spec as Entity['spec'];
+  // New entities have no managed-by-location of their own; point it at the
+  // overlay file so the catalog can trace them (and stop warning). Forced over
+  // any author-supplied value — these are location annotations the platform owns.
+  out.metadata.annotations = {
+    ...(out.metadata.annotations ?? {}),
+    'backstage.io/managed-by-location': scope.location,
+    'backstage.io/managed-by-origin-location': scope.location,
+  };
   return out;
 }
 
