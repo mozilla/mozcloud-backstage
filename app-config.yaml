@@ -299,7 +299,7 @@ catalog:
         audience: api.sso.mozilla.com
         clientId: ${PERSON_API_CLIENT_ID}
         clientSecret: ${PERSON_API_CLIENT_SECRET}
-        scope: 'classification:workgroup:staff_only'
+        scope: 'classification:workgroup:staff_only display:ndaed'
       apiBaseUrl: https://person.api.sso.mozilla.com/v2
       schedule:
         frequency: { hours: 6 }
