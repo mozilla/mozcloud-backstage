@@ -3,6 +3,7 @@ import {
   createBackendModule,
 } from '@backstage/backend-plugin-api';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
+import { MozcloudPeopleEntityProvider } from './MozcloudPeopleEntityProvider';
 import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { MozcloudWorkgroupEntityProvider } from './MozcloudWorkgroupEntityProvider';
 
@@ -59,6 +60,21 @@ export const catalogModuleMozcloud = createBackendModule({
           catalog.addEntityProvider(provider);
           logger.info(
             `Registered mozcloud workgroup provider (${provider.description})`,
+          );
+        }
+
+        const peopleCfg = config.getOptionalConfig(
+          'catalog.providers.mozcloudPeople',
+        );
+        if (peopleCfg) {
+          const provider = MozcloudPeopleEntityProvider.createFromConfig(
+            peopleCfg,
+            logger,
+            scheduler,
+          );
+          catalog.addEntityProvider(provider);
+          logger.info(
+            `Registered mozcloud people provider (${provider.description})`,
           );
         }
       },

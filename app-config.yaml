@@ -293,6 +293,18 @@ catalog:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
+    mozcloudPeople:
+      auth:
+        tokenUrl: https://auth.mozilla.auth0.com/oauth/token
+        audience: api.sso.mozilla.com
+        clientId: ${PERSON_API_CLIENT_ID}
+        clientSecret: ${PERSON_API_CLIENT_SECRET}
+        scope: 'classification:workgroup:staff_only'
+      apiBaseUrl: https://person.api.sso.mozilla.com/v2
+      schedule:
+        frequency: { hours: 6 }
+        timeout: { minutes: 10 }
+        initialDelay: { seconds: 30 }
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

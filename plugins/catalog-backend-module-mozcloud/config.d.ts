@@ -69,6 +69,23 @@ export interface Config {
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
 
+        mozcloudPeople?: {
+          auth: {
+            /** Auth0 token endpoint, e.g. https://auth.mozilla.auth0.com/oauth/token */
+            tokenUrl: string;
+            /** OAuth2 audience, e.g. api.sso.mozilla.com */
+            audience: string;
+            clientId: string;
+            /** @visibility secret */
+            clientSecret: string;
+            /** Space-separated CIS scopes the credential is granted. */
+            scope?: string;
+          };
+          /** Base URL, e.g. https://person.api.sso.mozilla.com/v2 */
+          apiBaseUrl: string;
+          schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
+        };
+
         workgroups?: {
           sources: {
             /**
