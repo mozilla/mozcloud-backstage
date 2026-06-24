@@ -103,9 +103,10 @@ export function definePersonApiSource<T>(
       const sep = opts.listPath.includes('?') ? '&' : '?';
       let nextPage: string | null | undefined;
       do {
-        const url =
-          `${opts.apiBaseUrl}${opts.listPath}` +
-          (nextPage ? `${sep}nextPage=${encodeURIComponent(nextPage)}` : '');
+        const pageQuery = nextPage
+          ? `${sep}nextPage=${encodeURIComponent(nextPage)}`
+          : '';
+        const url = `${opts.apiBaseUrl}${opts.listPath}${pageQuery}`;
         const page = await fetchPage(url);
         for (const item of page.Items ?? []) {
           try {
