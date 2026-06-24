@@ -50,6 +50,22 @@ export interface Config {
               };
             };
           };
+          /**
+           * Optional owner-authored overlay. When enabled, the tenant
+           * provider fetches a per-tenant catalog-info.yaml and folds it
+           * into its full mutation — owners can enrich their generated
+           * entities and add new ones scoped to their System.
+           */
+          overlay?: {
+            /** Master switch; overlays are ignored unless `true`. */
+            enabled: boolean;
+            /** Repo URL template, e.g. `https://github.com/mozilla/{function}-infra`. */
+            repoUrlTemplate: string;
+            /** Path template within the repo, e.g. `{app_code}/catalog-info.yaml`. */
+            pathTemplate: string;
+            /** Branch the overlay file lives on. Defaults to `main`. */
+            branch?: string;
+          };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
 

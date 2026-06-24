@@ -3,6 +3,7 @@ import {
   readSchedulerServiceTaskScheduleDefinitionFromConfig,
   SchedulerService,
   SchedulerServiceTaskRunner,
+  UrlReaderService,
 } from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
 import { Entity } from '@backstage/catalog-model';
@@ -28,6 +29,15 @@ import {
   chartsDeploymentsSourceDescription,
   tenantsQuery,
 } from './queries';
+import { tenantOwner } from './transform/refs';
+import { parseOverlay } from './overlay/parseOverlay';
+import { mergeOverlayEntities, TenantScope } from './overlay/mergeOverlay';
+import {
+  fetchTenantOverlay,
+  overlayUrl,
+  readOverlayConfig,
+  OverlayConfig,
+} from './overlay/fetchTenantOverlay';
 
 const DEFAULT_SCHEDULE = {
   frequency: { minutes: 30 },
@@ -58,6 +68,8 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     private readonly chartsSource: Source<ChartDeploymentsRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
+    private readonly reader?: UrlReaderService,
+    private readonly overlay?: OverlayConfig,
   ) {
     this.description = `tenants: ${tenantsSource.description}, charts: ${chartsSource.description}`;
   }
@@ -106,7 +118,12 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       entities.push(...chartToEntities(chart, chartsLocationRef));
     }
 
-    const deduped = dedupeByEntityRef(entities);
+    let merged = entities;
+    if (this.overlay?.enabled && this.reader) {
+      merged = await this.applyOverlays(merged, tenants);
+    }
+
+    const deduped = dedupeByEntityRef(merged);
 
     await this.connection.applyMutation({
       type: 'full',
@@ -126,6 +143,68 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
   }
 
   /**
+   * Fetch and merge each tenant's overlay file into the generated entity
+   * set. Per-tenant isolation: a failed fetch/parse/merge for one tenant
+   * is logged and skipped — it never aborts the refresh or drops the
+   * BigQuery-generated entities.
+   */
+  private async applyOverlays(
+    entities: Entity[],
+    tenants: TenantRow[],
+  ): Promise<Entity[]> {
+    if (!this.overlay || !this.reader) return entities;
+    let merged = entities;
+    for (const tenant of tenants) {
+      const appCode = tenant.globals.app_code;
+      const fn = tenant.globals.function;
+      const scope: TenantScope = {
+        appCode,
+        owner: tenantOwner(tenant.globals.workgroups),
+        // `mozcloud:`-scheme (not `url:`) so overlay entities match the
+        // managed-by-location convention of the BigQuery-generated ones and
+        // don't get the AboutCard refresh button — refreshing a provider-owned
+        // entity by URL does nothing useful. The URL is kept for traceability.
+        location: `mozcloud:overlay:${overlayUrl(this.overlay, {
+          function: fn,
+          app_code: appCode,
+        })}`,
+      };
+      try {
+        const content = await fetchTenantOverlay(
+          this.reader,
+          this.overlay,
+          { function: fn, app_code: appCode },
+          this.logger,
+        );
+        if (!content) continue;
+        const overlayEntities = parseOverlay(content, {
+          description: `overlay:${appCode}`,
+          logger: this.logger,
+        });
+        if (overlayEntities.length === 0) continue;
+        merged = mergeOverlayEntities(
+          merged,
+          overlayEntities,
+          scope,
+          this.logger,
+        );
+        this.logger.info(
+          `${this.getProviderName()}: applied overlay for ${appCode} (${
+            overlayEntities.length
+          } docs)`,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `${this.getProviderName()}: overlay for ${appCode} failed: ${
+            (error as Error).message
+          }`,
+        );
+      }
+    }
+    return merged;
+  }
+
+  /**
    * Build a provider from its `catalog.providers.mozcloud.tenants` config
    * block. Owns the wiring of both BigQuery sources, the task schedule,
    * and the task runner so the registering module just hands the block
@@ -134,6 +213,7 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
   static createFromConfig(
     config: Config,
     logger: LoggerService,
+    reader: UrlReaderService,
     scheduler: SchedulerService,
   ): MozcloudTenantEntityProvider {
     const tenantsBq = config.getConfig('sources.tenants.bigquery').get<{
@@ -175,11 +255,15 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       : DEFAULT_SCHEDULE;
     const taskRunner = scheduler.createScheduledTaskRunner(schedule);
 
+    const overlay = readOverlayConfig(config);
+
     return new MozcloudTenantEntityProvider(
       tenantsSource,
       chartsSource,
       logger,
       taskRunner,
+      reader,
+      overlay,
     );
   }
 }

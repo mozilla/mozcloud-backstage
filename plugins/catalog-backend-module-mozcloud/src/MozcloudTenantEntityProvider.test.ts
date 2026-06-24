@@ -6,10 +6,12 @@ import {
 import {
   SchedulerServiceTaskInvocationDefinition,
   SchedulerServiceTaskRunner,
+  UrlReaderService,
 } from '@backstage/backend-plugin-api';
 import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { Source } from './sources/Source';
 import { ChartDeploymentsRow, TenantRow } from './transform/schema';
+import { OverlayConfig } from './overlay/fetchTenantOverlay';
 
 const TENANT_A: TenantRow = {
   globals: {
@@ -114,6 +116,73 @@ describe('MozcloudTenantEntityProvider', () => {
     for (const e of captured[0].entities) {
       expect(e.locationKey).toBe('MozcloudTenantEntityProvider');
     }
+  });
+
+  it('merges a tenant overlay: enriches the System and adds a new entity', async () => {
+    const overlayYaml = `
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: service-a
+  description: Service A overlay description
+  tags:
+    - extra-tag
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: service-a-public
+spec:
+  type: openapi
+  lifecycle: production
+`;
+    const reader = {
+      readUrl: async () => ({ buffer: async () => Buffer.from(overlayYaml) }),
+    } as unknown as UrlReaderService;
+
+    const overlay: OverlayConfig = {
+      enabled: true,
+      repoUrlTemplate: 'https://github.com/mozilla/{function}-infra',
+      pathTemplate: '{app_code}/catalog-info.yaml',
+      branch: 'main',
+    };
+
+    const captured: EntityProviderMutation[] = [];
+    const connection: EntityProviderConnection = {
+      applyMutation: async m => {
+        captured.push(m);
+      },
+      refresh: async () => {},
+    };
+
+    const provider = new MozcloudTenantEntityProvider(
+      new FakeSource<TenantRow>('fake-tenants:in-memory', [TENANT_A]),
+      new FakeSource<ChartDeploymentsRow>('fake-charts:in-memory', []),
+      mockServices.logger.mock(),
+      new ImmediateTaskRunner(),
+      reader,
+      overlay,
+    );
+
+    await provider.connect(connection);
+
+    if (captured[0].type !== 'full') throw new Error('unreachable');
+    const entities = captured[0].entities.map(e => e.entity);
+
+    const systemA = entities.find(
+      e => e.kind === 'System' && e.metadata.name === 'service-a',
+    )!;
+    expect(systemA.metadata.description).toBe('Service A overlay description');
+    expect(systemA.metadata.tags).toEqual(
+      expect.arrayContaining(['webservices', 'risk-high', 'extra-tag']),
+    );
+
+    const newApi = entities.find(
+      e => e.kind === 'API' && e.metadata.name === 'service-a-public',
+    )!;
+    expect(newApi).toBeDefined();
+    expect((newApi.spec as any).system).toBe('service-a');
+    expect((newApi.spec as any).owner).toBe('group:workgroups/team-x');
   });
 
   it('handles an empty source gracefully', async () => {
