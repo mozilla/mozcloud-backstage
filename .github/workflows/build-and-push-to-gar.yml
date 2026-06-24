@@ -16,9 +16,6 @@ jobs:
           - gcp_project_id: moz-fx-backstage-prod
             gar_repo: backstage-prod
 
-          - gcp_project_id: moz-fx-rapid-release-mode-1cb6
-            gar_repo: rapid-release-model-prod
-
     name: build and push
     runs-on: ubuntu-latest
     environment: build
