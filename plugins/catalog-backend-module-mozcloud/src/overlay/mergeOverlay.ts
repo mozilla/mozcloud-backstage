@@ -8,10 +8,11 @@ export interface TenantScope {
   /** Default owner ref for new entities that don't set one. */
   owner: string;
   /**
-   * Location ref (e.g. `url:https://github.com/.../catalog-info.yaml`) of the
-   * overlay file. Stamped onto new entities as their managed-by-location so the
-   * catalog can trace them back to the overlay, matching what the BigQuery
-   * transforms set on generated entities.
+   * Location ref (e.g. `mozcloud:overlay:https://github.com/.../catalog-info.yaml`)
+   * of the overlay file. Stamped onto new entities as their managed-by-location
+   * so the catalog can trace them back to the overlay, matching what the
+   * BigQuery transforms set on generated entities. Use the `mozcloud:` scheme
+   * (not `url:`/`file:`) so the AboutCard refresh button stays off.
    */
   location: string;
 }

@@ -160,7 +160,11 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       const scope: TenantScope = {
         appCode,
         owner: tenantOwner(tenant.globals.workgroups),
-        location: `url:${overlayUrl(this.overlay, {
+        // `mozcloud:`-scheme (not `url:`) so overlay entities match the
+        // managed-by-location convention of the BigQuery-generated ones and
+        // don't get the AboutCard refresh button — refreshing a provider-owned
+        // entity by URL does nothing useful. The URL is kept for traceability.
+        location: `mozcloud:overlay:${overlayUrl(this.overlay, {
           function: fn,
           app_code: appCode,
         })}`,

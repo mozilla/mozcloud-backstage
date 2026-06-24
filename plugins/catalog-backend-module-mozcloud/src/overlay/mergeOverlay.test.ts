@@ -11,7 +11,7 @@ const scope: TenantScope = {
   appCode: 'merino',
   owner: 'group:workgroups/merino',
   location:
-    'url:https://github.com/mozilla/webservices-infra/blob/main/merino/catalog-info.yaml',
+    'mozcloud:overlay:https://github.com/mozilla/webservices-infra/blob/main/merino/catalog-info.yaml',
 };
 const logger = () => mockServices.logger.mock();
 
