@@ -172,16 +172,20 @@ backend:
     store: redis
     connection: redis://127.0.0.1:6379
 
+  reading:
+    allow:
+      # Wildcard matches any *.services.mozilla.com subdomain (suffix match),
+      # so overlays can $text/$json other Mozilla service specs without
+      # editing the allowlist per host. Quoted because a leading '*' is a
+      # YAML alias indicator.
+      - host: '*.services.mozilla.com'
+
 integrations:
   github:
     - host: github.com
-      # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
-      # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
+      # This is a Personal Access Token or PAT from GitHub.
+      # In stage and prod we rely on a Github app
       token: ${GITHUB_TOKEN}
-    ### Example for how to add your GitHub Enterprise instance using the API:
-    # - host: ghe.example.net
-    #   apiBaseUrl: https://ghe.example.net/api/v3
-    #   token: ${GHE_TOKEN}
 
 proxy:
   endpoints:
