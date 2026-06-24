@@ -7,7 +7,10 @@ import {
   TenantScope,
 } from './mergeOverlay';
 
-const scope: TenantScope = { appCode: 'merino', owner: 'group:workgroups/merino' };
+const scope: TenantScope = {
+  appCode: 'merino',
+  owner: 'group:workgroups/merino',
+};
 const logger = () => mockServices.logger.mock();
 
 const generated = (): Entity[] => [
@@ -32,11 +35,14 @@ const generated = (): Entity[] => [
 
 describe('entityRef', () => {
   it('builds a lowercased kind:namespace/name ref with default namespace', () => {
-    expect(entityRef({ kind: 'System', metadata: { name: 'Merino' } } as Entity)).toBe(
-      'system:default/merino',
-    );
     expect(
-      entityRef({ kind: 'API', metadata: { name: 'x', namespace: 'NS' } } as Entity),
+      entityRef({ kind: 'System', metadata: { name: 'Merino' } } as Entity),
+    ).toBe('system:default/merino');
+    expect(
+      entityRef({
+        kind: 'API',
+        metadata: { name: 'x', namespace: 'NS' },
+      } as Entity),
     ).toBe('api:ns/x');
   });
 });
@@ -46,7 +52,11 @@ describe('belongsToTenant', () => {
     expect(belongsToTenant(generated()[0], 'merino')).toBe(true);
   });
   it('matches an entity via spec.system', () => {
-    const c = { kind: 'Component', metadata: { name: 'svc' }, spec: { system: 'merino' } } as unknown as Entity;
+    const c = {
+      kind: 'Component',
+      metadata: { name: 'svc' },
+      spec: { system: 'merino' },
+    } as unknown as Entity;
     expect(belongsToTenant(c, 'merino')).toBe(true);
   });
   it('rejects another tenant', () => {
@@ -87,13 +97,20 @@ describe('mergeOverlayEntities', () => {
         metadata: {
           name: 'merino',
           tags: ['risk-high', 'public-api'],
-          links: [{ url: 'https://a', title: 'A dup' }, { url: 'https://b', title: 'B' }],
+          links: [
+            { url: 'https://a', title: 'A dup' },
+            { url: 'https://b', title: 'B' },
+          ],
         },
       },
     ];
     const out = mergeOverlayEntities(generated(), overlay, scope, logger());
     const sys = out.find(e => e.metadata.name === 'merino')!;
-    expect(sys.metadata.tags).toEqual(['webservices', 'risk-high', 'public-api']);
+    expect(sys.metadata.tags).toEqual([
+      'webservices',
+      'risk-high',
+      'public-api',
+    ]);
     expect(sys.metadata.links).toEqual([
       { url: 'https://a', title: 'A' },
       { url: 'https://b', title: 'B' },
@@ -137,7 +154,11 @@ describe('mergeOverlayEntities', () => {
         apiVersion: 'backstage.io/v1alpha1',
         kind: 'API',
         metadata: { name: 'merino-suggest' },
-        spec: { type: 'openapi', owner: 'group:workgroups/merino-api', system: 'wrong' },
+        spec: {
+          type: 'openapi',
+          owner: 'group:workgroups/merino-api',
+          system: 'wrong',
+        },
       },
     ];
     const out = mergeOverlayEntities(generated(), overlay, scope, logger());

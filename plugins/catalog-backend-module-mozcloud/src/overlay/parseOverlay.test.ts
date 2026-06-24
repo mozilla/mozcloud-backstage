@@ -1,7 +1,10 @@
 import { mockServices } from '@backstage/backend-test-utils';
 import { parseOverlay, isEntity } from './parseOverlay';
 
-const opts = () => ({ description: 'overlay:test', logger: mockServices.logger.mock() });
+const opts = () => ({
+  description: 'overlay:test',
+  logger: mockServices.logger.mock(),
+});
 
 describe('parseOverlay', () => {
   it('parses a multi-document file into entities', () => {
@@ -31,7 +34,10 @@ spec:
 
   it('returns [] and logs on malformed YAML', () => {
     const logger = mockServices.logger.mock();
-    const result = parseOverlay('this: : : not: valid', { description: 'overlay:test', logger });
+    const result = parseOverlay('this: : : not: valid', {
+      description: 'overlay:test',
+      logger,
+    });
     expect(result).toEqual([]);
     expect(logger.warn).toHaveBeenCalled();
   });
@@ -56,9 +62,13 @@ metadata:
   });
 
   it('isEntity accepts a well-formed entity and rejects junk', () => {
-    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: { name: 'x' } })).toBe(true);
+    expect(
+      isEntity({ apiVersion: 'v1', kind: 'API', metadata: { name: 'x' } }),
+    ).toBe(true);
     expect(isEntity({ kind: 'API', metadata: { name: 'x' } })).toBe(false);
-    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: {} })).toBe(false);
+    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: {} })).toBe(
+      false,
+    );
     expect(isEntity('nope')).toBe(false);
     expect(isEntity(null)).toBe(false);
   });

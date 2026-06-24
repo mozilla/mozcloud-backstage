@@ -180,7 +180,9 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
           this.logger,
         );
         this.logger.info(
-          `${this.getProviderName()}: applied overlay for ${appCode} (${overlayEntities.length} docs)`,
+          `${this.getProviderName()}: applied overlay for ${appCode} (${
+            overlayEntities.length
+          } docs)`,
         );
       } catch (error) {
         this.logger.warn(

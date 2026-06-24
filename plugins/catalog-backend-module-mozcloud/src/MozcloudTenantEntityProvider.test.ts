@@ -177,7 +177,9 @@ spec:
       expect.arrayContaining(['webservices', 'risk-high', 'extra-tag']),
     );
 
-    const newApi = entities.find(e => e.kind === 'API' && e.metadata.name === 'service-a-public')!;
+    const newApi = entities.find(
+      e => e.kind === 'API' && e.metadata.name === 'service-a-public',
+    )!;
     expect(newApi).toBeDefined();
     expect((newApi.spec as any).system).toBe('service-a');
     expect((newApi.spec as any).owner).toBe('group:workgroups/team-x');

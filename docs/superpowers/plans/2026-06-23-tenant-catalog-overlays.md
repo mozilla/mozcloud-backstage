@@ -22,12 +22,15 @@
 ### Task 1: `parseOverlay` — YAML to validated entities
 
 **Files:**
+
 - Create: `plugins/catalog-backend-module-mozcloud/src/overlay/parseOverlay.ts`
 - Test: `plugins/catalog-backend-module-mozcloud/src/overlay/parseOverlay.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks. `LoggerService` from `@backstage/backend-plugin-api`; `Entity` from `@backstage/catalog-model`; `load`/`loadAll` from `js-yaml`.
 - Produces:
+
   - `export function parseOverlay(content: string, opts: { description: string; logger: LoggerService }): Entity[]`
   - `export function isEntity(value: unknown): value is Entity`
   - Never throws. Malformed YAML → `[]` + `logger.warn`. Each non-entity document → skipped + `logger.warn`. Supports multi-document (`---`) YAML.
@@ -39,7 +42,10 @@
 import { mockServices } from '@backstage/backend-test-utils';
 import { parseOverlay, isEntity } from './parseOverlay';
 
-const opts = () => ({ description: 'overlay:test', logger: mockServices.logger.mock() });
+const opts = () => ({
+  description: 'overlay:test',
+  logger: mockServices.logger.mock(),
+});
 
 describe('parseOverlay', () => {
   it('parses a multi-document file into entities', () => {
@@ -69,7 +75,10 @@ spec:
 
   it('returns [] and logs on malformed YAML', () => {
     const logger = mockServices.logger.mock();
-    const result = parseOverlay('this: : : not: valid', { description: 'overlay:test', logger });
+    const result = parseOverlay('this: : : not: valid', {
+      description: 'overlay:test',
+      logger,
+    });
     expect(result).toEqual([]);
     expect(logger.warn).toHaveBeenCalled();
   });
@@ -94,9 +103,13 @@ metadata:
   });
 
   it('isEntity accepts a well-formed entity and rejects junk', () => {
-    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: { name: 'x' } })).toBe(true);
+    expect(
+      isEntity({ apiVersion: 'v1', kind: 'API', metadata: { name: 'x' } }),
+    ).toBe(true);
     expect(isEntity({ kind: 'API', metadata: { name: 'x' } })).toBe(false);
-    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: {} })).toBe(false);
+    expect(isEntity({ apiVersion: 'v1', kind: 'API', metadata: {} })).toBe(
+      false,
+    );
     expect(isEntity('nope')).toBe(false);
     expect(isEntity(null)).toBe(false);
   });
@@ -192,12 +205,15 @@ git commit -m "feat(overlay): parse owner-authored catalog-info.yaml into entiti
 ### Task 2: `mergeOverlay` — tenant-scoped merge semantics
 
 **Files:**
+
 - Create: `plugins/catalog-backend-module-mozcloud/src/overlay/mergeOverlay.ts`
 - Test: `plugins/catalog-backend-module-mozcloud/src/overlay/mergeOverlay.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Entity`, `EntityLink` from `@backstage/catalog-model`; `LoggerService` from `@backstage/backend-plugin-api`.
 - Produces:
+
   - `export interface TenantScope { appCode: string; owner: string; }`
   - `export function entityRef(entity: Entity): string` — `kind:namespace/name`, lowercased, namespace defaults to `default`.
   - `export function belongsToTenant(entity: Entity, appCode: string): boolean` — true when `kind===System && name===appCode`, or `spec.system===appCode`.
@@ -216,7 +232,10 @@ import {
   TenantScope,
 } from './mergeOverlay';
 
-const scope: TenantScope = { appCode: 'merino', owner: 'group:workgroups/merino' };
+const scope: TenantScope = {
+  appCode: 'merino',
+  owner: 'group:workgroups/merino',
+};
 const logger = () => mockServices.logger.mock();
 
 const generated = (): Entity[] => [
@@ -241,11 +260,14 @@ const generated = (): Entity[] => [
 
 describe('entityRef', () => {
   it('builds a lowercased kind:namespace/name ref with default namespace', () => {
-    expect(entityRef({ kind: 'System', metadata: { name: 'Merino' } } as Entity)).toBe(
-      'system:default/merino',
-    );
     expect(
-      entityRef({ kind: 'API', metadata: { name: 'x', namespace: 'NS' } } as Entity),
+      entityRef({ kind: 'System', metadata: { name: 'Merino' } } as Entity),
+    ).toBe('system:default/merino');
+    expect(
+      entityRef({
+        kind: 'API',
+        metadata: { name: 'x', namespace: 'NS' },
+      } as Entity),
     ).toBe('api:ns/x');
   });
 });
@@ -255,7 +277,11 @@ describe('belongsToTenant', () => {
     expect(belongsToTenant(generated()[0], 'merino')).toBe(true);
   });
   it('matches an entity via spec.system', () => {
-    const c = { kind: 'Component', metadata: { name: 'svc' }, spec: { system: 'merino' } } as Entity;
+    const c = {
+      kind: 'Component',
+      metadata: { name: 'svc' },
+      spec: { system: 'merino' },
+    } as Entity;
     expect(belongsToTenant(c, 'merino')).toBe(true);
   });
   it('rejects another tenant', () => {
@@ -296,13 +322,20 @@ describe('mergeOverlayEntities', () => {
         metadata: {
           name: 'merino',
           tags: ['risk-high', 'public-api'],
-          links: [{ url: 'https://a', title: 'A dup' }, { url: 'https://b', title: 'B' }],
+          links: [
+            { url: 'https://a', title: 'A dup' },
+            { url: 'https://b', title: 'B' },
+          ],
         },
       },
     ];
     const out = mergeOverlayEntities(generated(), overlay, scope, logger());
     const sys = out.find(e => e.metadata.name === 'merino')!;
-    expect(sys.metadata.tags).toEqual(['webservices', 'risk-high', 'public-api']);
+    expect(sys.metadata.tags).toEqual([
+      'webservices',
+      'risk-high',
+      'public-api',
+    ]);
     expect(sys.metadata.links).toEqual([
       { url: 'https://a', title: 'A' },
       { url: 'https://b', title: 'B' },
@@ -346,7 +379,11 @@ describe('mergeOverlayEntities', () => {
         apiVersion: 'backstage.io/v1alpha1',
         kind: 'API',
         metadata: { name: 'merino-suggest' },
-        spec: { type: 'openapi', owner: 'group:workgroups/merino-api', system: 'wrong' },
+        spec: {
+          type: 'openapi',
+          owner: 'group:workgroups/merino-api',
+          system: 'wrong',
+        },
       },
     ];
     const out = mergeOverlayEntities(generated(), overlay, scope, logger());
@@ -457,7 +494,10 @@ function mergeEntity(base: Entity, overlay: Entity): Entity {
     } else if (k === 'tags' && Array.isArray(v)) {
       out.metadata.tags = unionTags(out.metadata.tags ?? [], v as string[]);
     } else if (k === 'links' && Array.isArray(v)) {
-      out.metadata.links = unionLinks(out.metadata.links ?? [], v as EntityLink[]);
+      out.metadata.links = unionLinks(
+        out.metadata.links ?? [],
+        v as EntityLink[],
+      );
     } else {
       (out.metadata as Record<string, unknown>)[k] = v;
     }
@@ -534,12 +574,15 @@ git commit -m "feat(overlay): tenant-scoped merge of overlay entities"
 ### Task 3: `fetchTenantOverlay` — URL templating + UrlReader fetch
 
 **Files:**
+
 - Create: `plugins/catalog-backend-module-mozcloud/src/overlay/fetchTenantOverlay.ts`
 - Test: `plugins/catalog-backend-module-mozcloud/src/overlay/fetchTenantOverlay.test.ts`
 
 **Interfaces:**
+
 - Consumes: `UrlReaderService`, `LoggerService` from `@backstage/backend-plugin-api`; `Config` from `@backstage/config`.
 - Produces:
+
   - `export interface OverlayConfig { enabled: boolean; repoUrlTemplate: string; pathTemplate: string; branch: string; }`
   - `export function readOverlayConfig(config: Config): OverlayConfig | undefined` — reads the optional `overlay` block from a tenants config; returns `undefined` when absent or `enabled !== true`.
   - `export function overlayUrl(cfg: OverlayConfig, vars: { function: string; app_code: string }): string` — substitutes `{function}` and `{app_code}` into `${repoUrlTemplate}/blob/${branch}/${pathTemplate}`.
@@ -580,20 +623,33 @@ describe('overlayUrl', () => {
 describe('fetchTenantOverlay', () => {
   it('returns file contents on success', async () => {
     const reader = fakeReader({
-      readUrl: async () => ({ buffer: async () => Buffer.from('kind: API') } as any),
+      readUrl: async () =>
+        ({ buffer: async () => Buffer.from('kind: API') } as any),
     });
-    const result = await fetchTenantOverlay(reader, cfg, vars, mockServices.logger.mock());
+    const result = await fetchTenantOverlay(
+      reader,
+      cfg,
+      vars,
+      mockServices.logger.mock(),
+    );
     expect(result).toBe('kind: API');
   });
 
   it('returns undefined when the file is not found', async () => {
-    const notFound = Object.assign(new Error('not found'), { name: 'NotFoundError' });
+    const notFound = Object.assign(new Error('not found'), {
+      name: 'NotFoundError',
+    });
     const reader = fakeReader({
       readUrl: async () => {
         throw notFound;
       },
     });
-    const result = await fetchTenantOverlay(reader, cfg, vars, mockServices.logger.mock());
+    const result = await fetchTenantOverlay(
+      reader,
+      cfg,
+      vars,
+      mockServices.logger.mock(),
+    );
     expect(result).toBeUndefined();
   });
 
@@ -713,6 +769,7 @@ git commit -m "feat(overlay): fetch per-tenant overlay file via UrlReader"
 ### Task 4: Wire overlays into the provider, config, and module
 
 **Files:**
+
 - Modify: `plugins/catalog-backend-module-mozcloud/src/MozcloudTenantEntityProvider.ts`
 - Modify: `plugins/catalog-backend-module-mozcloud/src/MozcloudTenantEntityProvider.test.ts`
 - Modify: `plugins/catalog-backend-module-mozcloud/src/module.ts`
@@ -720,6 +777,7 @@ git commit -m "feat(overlay): fetch per-tenant overlay file via UrlReader"
 - Modify: `app-config.yaml`
 
 **Interfaces:**
+
 - Consumes: `parseOverlay` (Task 1), `mergeOverlayEntities` + `TenantScope` (Task 2), `fetchTenantOverlay` + `readOverlayConfig` + `OverlayConfig` (Task 3); `UrlReaderService` from `@backstage/backend-plugin-api`; `tenantOwner` from `./transform/refs`.
 - Produces: `MozcloudTenantEntityProvider` constructor gains two optional trailing params `reader?: UrlReaderService, overlay?: OverlayConfig`; `createFromConfig` gains a `reader: UrlReaderService` param (inserted before `scheduler`). Existing 4-arg `new MozcloudTenantEntityProvider(...)` calls remain valid (new params optional).
 
@@ -792,7 +850,9 @@ spec:
     expect.arrayContaining(['webservices', 'risk-high', 'extra-tag']),
   );
 
-  const newApi = entities.find(e => e.kind === 'API' && e.metadata.name === 'service-a-public')!;
+  const newApi = entities.find(
+    e => e.kind === 'API' && e.metadata.name === 'service-a-public',
+  )!;
   expect(newApi).toBeDefined();
   expect((newApi.spec as any).system).toBe('service-a');
   expect((newApi.spec as any).owner).toBe('group:workgroups/team-x');
@@ -838,20 +898,20 @@ Extend the constructor (add two optional trailing params):
 In `refresh()`, replace the block between building `entities` and `const deduped = ...` so overlays merge first:
 
 ```ts
-    for (const tenant of tenants) {
-      entities.push(...tenantToEntities(tenant, tenantsLocationRef));
-    }
+for (const tenant of tenants) {
+  entities.push(...tenantToEntities(tenant, tenantsLocationRef));
+}
 
-    for (const chart of charts) {
-      entities.push(...chartToEntities(chart, chartsLocationRef));
-    }
+for (const chart of charts) {
+  entities.push(...chartToEntities(chart, chartsLocationRef));
+}
 
-    let merged = entities;
-    if (this.overlay?.enabled && this.reader) {
-      merged = await this.applyOverlays(merged, tenants);
-    }
+let merged = entities;
+if (this.overlay?.enabled && this.reader) {
+  merged = await this.applyOverlays(merged, tenants);
+}
 
-    const deduped = dedupeByEntityRef(merged);
+const deduped = dedupeByEntityRef(merged);
 ```
 
 Add a private method (place it just below `refresh`):
@@ -952,18 +1012,16 @@ In `src/module.ts`, add `urlReader` to the deps and pass it through. Update the 
 And update the tenant provider creation call:
 
 ```ts
-        if (tenantsCfg) {
-          const provider = MozcloudTenantEntityProvider.createFromConfig(
-            tenantsCfg,
-            logger,
-            reader,
-            scheduler,
-          );
-          catalog.addEntityProvider(provider);
-          logger.info(
-            `Registered mozcloud tenant provider (${provider.description})`,
-          );
-        }
+if (tenantsCfg) {
+  const provider = MozcloudTenantEntityProvider.createFromConfig(
+    tenantsCfg,
+    logger,
+    reader,
+    scheduler,
+  );
+  catalog.addEntityProvider(provider);
+  logger.info(`Registered mozcloud tenant provider (${provider.description})`);
+}
 ```
 
 (The workgroup provider call is unchanged.)
@@ -996,14 +1054,14 @@ In `config.d.ts`, add the `overlay` block inside `tenants` (after the `sources` 
 In `app-config.yaml`, under `catalog.providers.mozcloud.tenants`, add the `overlay` block (sibling of `sources` and `schedule`):
 
 ```yaml
-        tenants:
-          overlay:
-            enabled: true
-            repoUrlTemplate: "https://github.com/mozilla/{function}-infra"
-            pathTemplate: "{app_code}/catalog-info.yaml"
-            branch: main
-          sources:
-            # ... existing sources unchanged ...
+tenants:
+  overlay:
+    enabled: true
+    repoUrlTemplate: 'https://github.com/mozilla/{function}-infra'
+    pathTemplate: '{app_code}/catalog-info.yaml'
+    branch: main
+  sources:
+    # ... existing sources unchanged ...
 ```
 
 - [ ] **Step 7: Run the full package test suite**
@@ -1032,6 +1090,7 @@ git commit -m "feat(overlay): wire per-tenant overlays into the tenant provider"
 ## Self-Review
 
 **Spec coverage:**
+
 - "Add new entities" → Task 2 `stampNewEntity` + Task 4 provider test (new API). ✓
 - "Enrich/override generated entities" → Task 2 `mergeEntity` (scalar override, annotation deep-merge). ✓
 - File location & templated config → Task 3 `overlayUrl`/`readOverlayConfig`, Task 4 config.d.ts + app-config. ✓

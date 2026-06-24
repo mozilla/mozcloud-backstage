@@ -239,8 +239,8 @@ catalog:
       tenants:
         overlay:
           enabled: true
-          repoUrlTemplate: "https://github.com/mozilla/{function}-infra"
-          pathTemplate: "{app_code}/catalog-info.yaml"
+          repoUrlTemplate: 'https://github.com/mozilla/{function}-infra'
+          pathTemplate: '{app_code}/catalog-info.yaml'
           branch: main
         sources:
           # Reads `mozdata.mozcloud.tenants` directly.

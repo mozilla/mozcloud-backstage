@@ -57,8 +57,8 @@ This was chosen over:
         tenants:
           overlay:
             enabled: true
-            repoUrlTemplate: "https://github.com/mozilla/{function}-infra"
-            pathTemplate: "{app_code}/catalog-info.yaml"
+            repoUrlTemplate: 'https://github.com/mozilla/{function}-infra'
+            pathTemplate: '{app_code}/catalog-info.yaml'
             branch: main
   ```
 
@@ -76,10 +76,11 @@ For each entity document in the overlay file:
    matches an entity already generated for this tenant → **override**.
    Otherwise → **new entity**.
 
-2. **Tenant scope guard.** An override target must belong to *this* tenant
+2. **Tenant scope guard.** An override target must belong to _this_ tenant
    (its `app_code` / System). A file at `{app_code}/` may only touch
    entities of that tenant. Cross-tenant or unknown override targets are
    **ignored and logged at `warn`**. New entities are auto-stamped:
+
    - `spec.system = {app_code}` (forced — a new entity always joins this
      tenant's System);
    - `spec.owner` defaults to the tenant's primary workgroup if unset.

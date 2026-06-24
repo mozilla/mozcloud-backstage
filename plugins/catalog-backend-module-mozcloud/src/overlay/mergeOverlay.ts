@@ -90,7 +90,10 @@ function mergeEntity(base: Entity, overlay: Entity): Entity {
     } else if (k === 'tags' && Array.isArray(v)) {
       out.metadata.tags = unionTags(out.metadata.tags ?? [], v as string[]);
     } else if (k === 'links' && Array.isArray(v)) {
-      out.metadata.links = unionLinks(out.metadata.links ?? [], v as EntityLink[]);
+      out.metadata.links = unionLinks(
+        out.metadata.links ?? [],
+        v as EntityLink[],
+      );
     } else {
       (out.metadata as Record<string, unknown>)[k] = v;
     }

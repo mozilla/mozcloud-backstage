@@ -29,20 +29,33 @@ describe('overlayUrl', () => {
 describe('fetchTenantOverlay', () => {
   it('returns file contents on success', async () => {
     const reader = fakeReader({
-      readUrl: async () => ({ buffer: async () => Buffer.from('kind: API') } as any),
+      readUrl: async () =>
+        ({ buffer: async () => Buffer.from('kind: API') } as any),
     });
-    const result = await fetchTenantOverlay(reader, cfg, vars, mockServices.logger.mock());
+    const result = await fetchTenantOverlay(
+      reader,
+      cfg,
+      vars,
+      mockServices.logger.mock(),
+    );
     expect(result).toBe('kind: API');
   });
 
   it('returns undefined when the file is not found', async () => {
-    const notFound = Object.assign(new Error('not found'), { name: 'NotFoundError' });
+    const notFound = Object.assign(new Error('not found'), {
+      name: 'NotFoundError',
+    });
     const reader = fakeReader({
       readUrl: async () => {
         throw notFound;
       },
     });
-    const result = await fetchTenantOverlay(reader, cfg, vars, mockServices.logger.mock());
+    const result = await fetchTenantOverlay(
+      reader,
+      cfg,
+      vars,
+      mockServices.logger.mock(),
+    );
     expect(result).toBeUndefined();
   });
 
