@@ -113,6 +113,43 @@ The merged/added entities are appended to the provider's existing entity set
   pattern.
 - **Multi-document YAML** (`---` separated) is supported.
 
+## Authoring an overlay (owner guide)
+
+Practical rules for the `catalog-info.yaml` an owner writes, including pitfalls
+hit while validating the feature:
+
+- **Enrich vs. add.** To enrich a generated entity, declare a document with the
+  **same `kind` + `metadata.name`** as the generated one — matching fields merge
+  (scalars overwrite, `annotations` key-merge, `tags`/`links` append + dedup). To
+  add a new entity, give it a new name — it is auto-attached to your System
+  (`spec.system`) and inherits your team as owner if you omit `spec.owner`.
+- **Relationship fields are plural arrays of entity refs.** On a Component use
+  `providesApis`, `consumesApis`, `dependsOn`, `subcomponentOf` — e.g.
+
+  ```yaml
+  spec:
+    providesApis:
+      - o11y-demo-example-api
+  ```
+
+  The singular `providesApi` is **not** a field and is silently ignored.
+
+- **Do not set relation fields in `spec`.** `apiProvidedBy` / `apiConsumedBy` /
+  `consumesApiBy` etc. are relations Backstage derives automatically from the
+  Component's `providesApis` / `consumesApis`. Setting them by hand does nothing.
+- **Bare refs** in fields like `providesApis` resolve with a default kind and
+  the document's namespace (e.g. `foo` → `api:default/foo`). Use a full
+  `kind:namespace/name` ref to cross namespaces.
+- **API entities** require `spec.type`, `spec.lifecycle`, and `spec.definition`
+  (`spec.owner` is defaulted from your tenant if omitted).
+- **Don't set `backstage.io/managed-by-location`.** The provider stamps it (with
+  the `mozcloud:` scheme, so overlay entities behave like generated ones — no
+  AboutCard refresh button).
+- **Overlay branch must not contain `/`.** The fetch builds a GitHub
+  `…/blob/{branch}/{path}` URL, and the reader's URL parser greedily splits a
+  slashed ref (`team/feature`) into `ref=team`, `path=feature/…` → a 404.
+  Production overlays live on `main`, so this only bites ad-hoc test branches.
+
 ## Code structure
 
 Fits the existing module layout under
