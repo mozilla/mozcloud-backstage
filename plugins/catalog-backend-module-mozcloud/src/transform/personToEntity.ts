@@ -65,7 +65,8 @@ function userLinks(email: string, githubLogin?: string | null): EntityLink[] {
  *   back to the email local-part.
  * - `picture` is always a Gravatar URL derived from the email.
  * - GitHub annotations are set only when the row provides them.
- * - No `spec.memberOf` — membership is derived from Group `spec.members`.
+ * - `spec.memberOf` is empty (required by the User schema); membership is
+ *   derived from the workgroup Groups' `spec.members`.
  */
 export function personToEntity(user: UserRow, locationRef: string): Entity {
   const displayName = user.name?.trim() || '' || user.email.split('@')[0];
@@ -101,6 +102,10 @@ export function personToEntity(user: UserRow, locationRef: string): Entity {
         email: user.email,
         picture: gravatarUrl(user.email, user.name),
       }),
+      // The User kind schema requires `memberOf`. We leave it empty here:
+      // the actual membership relations are derived by the catalog from the
+      // workgroup Groups' `spec.members` (which reference these people users).
+      memberOf: [],
     },
   };
 }

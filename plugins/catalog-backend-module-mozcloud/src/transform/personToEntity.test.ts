@@ -173,8 +173,8 @@ describe('personToEntity', () => {
     ).toBeUndefined();
   });
 
-  it('does NOT set spec.memberOf', () => {
+  it('sets spec.memberOf to an empty array (required by the User schema; membership comes from Group.spec.members)', () => {
     const e = personToEntity(fullUser, LOCATION);
-    expect((e.spec as any).memberOf).toBeUndefined();
+    expect((e.spec as any).memberOf).toEqual([]);
   });
 });
