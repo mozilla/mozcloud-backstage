@@ -301,6 +301,10 @@ catalog:
         clientSecret: ${PERSON_API_CLIENT_SECRET}
         scope: 'classification:workgroup:staff_only'
       apiBaseUrl: https://person.api.sso.mozilla.com/v2
+      bigqueryUsers:
+        project: mozdata
+        dataset: mozcloud
+        billingProject: moz-fx-backstage-nonprod
       schedule:
         frequency: { hours: 6 }
         timeout: { minutes: 10 }

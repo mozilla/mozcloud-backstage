@@ -7,12 +7,10 @@ const auth: PersonApiAuthConfig = {
   audience: 'api.sso.mozilla.com',
   clientId: 'id',
   clientSecret: 'secret',
-  scope: 'classification:workgroup:staff_only display:ndaed',
+  scope: 'classification:workgroup:staff_only',
 };
 const rowSchema = z.object({ primary_email: z.string() });
-const unwrap = (raw: Record<string, unknown>) => ({
-  primary_email: (raw.primary_email as { value?: string } | undefined)?.value,
-});
+const unwrap = (raw: Record<string, unknown>) => raw;
 
 type Resp = { ok: boolean; status: number; json: () => Promise<unknown> };
 const ok = (body: unknown): Resp => ({
@@ -30,7 +28,7 @@ function makeSource(fetchImpl: jest.Mock, now: () => number) {
   return definePersonApiSource({
     auth,
     apiBaseUrl: 'https://person.example/v2',
-    listPath: '/users?staff=True',
+    listPath: '/users/id/all?connectionMethod=ad',
     schema: rowSchema,
     unwrap,
     description: 'person-api:test',
@@ -41,20 +39,20 @@ function makeSource(fetchImpl: jest.Mock, now: () => number) {
 }
 
 const tokenBody = { access_token: 'tok-1', expires_in: 3600 };
-const profile = (email: string) => ({ primary_email: { value: email } });
+const rosterItem = (email: string) => ({ primary_email: email });
 
 describe('definePersonApiSource', () => {
-  it('authenticates once and follows nextPage to completion', async () => {
+  it('authenticates once and follows nextPage to completion using users key', async () => {
     const fetchImpl = jest.fn();
     // token
     fetchImpl.mockResolvedValueOnce(ok(tokenBody));
     // page 1
     fetchImpl.mockResolvedValueOnce(
-      ok({ Items: [profile('a@m.com')], nextPage: 'p2' }),
+      ok({ users: [rosterItem('a@m.com')], nextPage: 'p2' }),
     );
     // page 2
     fetchImpl.mockResolvedValueOnce(
-      ok({ Items: [profile('b@m.com')], nextPage: null }),
+      ok({ users: [rosterItem('b@m.com')], nextPage: null }),
     );
 
     const source = makeSource(fetchImpl, () => 1000);
@@ -68,7 +66,7 @@ describe('definePersonApiSource', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(fetchImpl.mock.calls[0][0]).toBe('https://auth.example/oauth/token');
     expect(fetchImpl.mock.calls[1][0]).toBe(
-      'https://person.example/v2/users?staff=True',
+      'https://person.example/v2/users/id/all?connectionMethod=ad',
     );
     expect(fetchImpl.mock.calls[2][0]).toContain('nextPage=p2');
     // bearer header on list calls
@@ -77,11 +75,43 @@ describe('definePersonApiSource', () => {
     );
   });
 
+  it('appends nextPage token verbatim without double-encoding', async () => {
+    // The roster returns a pre-encoded token like "a%7Cb" — we must NOT
+    // encodeURIComponent it again (that would produce "a%257Cb").
+    const fetchImpl = jest.fn();
+    fetchImpl.mockResolvedValueOnce(ok(tokenBody));
+    fetchImpl.mockResolvedValueOnce(
+      ok({ users: [rosterItem('a@m.com')], nextPage: 'a%7Cb' }),
+    );
+    fetchImpl.mockResolvedValueOnce(
+      ok({ users: [rosterItem('b@m.com')], nextPage: null }),
+    );
+
+    const source = makeSource(fetchImpl, () => 1000);
+    await source.fetchAll();
+
+    const secondUrl = fetchImpl.mock.calls[2][0] as string;
+    expect(secondUrl).toContain('nextPage=a%7Cb');
+    expect(secondUrl).not.toContain('nextPage=a%257Cb');
+  });
+
+  it('falls back to Items key when users key is absent', async () => {
+    const fetchImpl = jest.fn();
+    fetchImpl.mockResolvedValueOnce(ok(tokenBody));
+    fetchImpl.mockResolvedValueOnce(
+      ok({ Items: [rosterItem('c@m.com')], nextPage: null }),
+    );
+
+    const source = makeSource(fetchImpl, () => 1000);
+    const rows = await source.fetchAll();
+    expect(rows).toEqual([{ primary_email: 'c@m.com' }]);
+  });
+
   it('reuses the cached token across fetchAll calls until it expires', async () => {
     const fetchImpl = jest.fn();
     fetchImpl.mockResolvedValueOnce(ok(tokenBody)); // token @ t=0
-    fetchImpl.mockResolvedValueOnce(ok({ Items: [], nextPage: null }));
-    fetchImpl.mockResolvedValueOnce(ok({ Items: [], nextPage: null })); // 2nd call, still cached
+    fetchImpl.mockResolvedValueOnce(ok({ users: [], nextPage: null }));
+    fetchImpl.mockResolvedValueOnce(ok({ users: [], nextPage: null })); // 2nd call, still cached
     let t = 0;
     const source = makeSource(fetchImpl, () => t);
 
@@ -97,11 +127,11 @@ describe('definePersonApiSource', () => {
     fetchImpl.mockResolvedValueOnce(
       ok({ access_token: 'tok-1', expires_in: 100 }),
     );
-    fetchImpl.mockResolvedValueOnce(ok({ Items: [], nextPage: null }));
+    fetchImpl.mockResolvedValueOnce(ok({ users: [], nextPage: null }));
     fetchImpl.mockResolvedValueOnce(
       ok({ access_token: 'tok-2', expires_in: 100 }),
     );
-    fetchImpl.mockResolvedValueOnce(ok({ Items: [], nextPage: null }));
+    fetchImpl.mockResolvedValueOnce(ok({ users: [], nextPage: null }));
     let t = 0;
     const source = makeSource(fetchImpl, () => t);
 
@@ -119,7 +149,7 @@ describe('definePersonApiSource', () => {
       ok({ access_token: 'tok-2', expires_in: 3600 }),
     ); // re-auth
     fetchImpl.mockResolvedValueOnce(
-      ok({ Items: [profile('a@m.com')], nextPage: null }),
+      ok({ users: [rosterItem('a@m.com')], nextPage: null }),
     ); // retry ok
     const source = makeSource(fetchImpl, () => 0);
 
@@ -130,12 +160,12 @@ describe('definePersonApiSource', () => {
     );
   });
 
-  it('skips a profile that fails validation', async () => {
+  it('skips a row that fails validation', async () => {
     const fetchImpl = jest.fn();
     fetchImpl.mockResolvedValueOnce(ok(tokenBody));
     fetchImpl.mockResolvedValueOnce(
       ok({
-        Items: [profile('a@m.com'), { primary_email: { value: undefined } }],
+        users: [rosterItem('a@m.com'), { primary_email: 123 }],
         nextPage: null,
       }),
     );

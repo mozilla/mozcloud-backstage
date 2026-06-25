@@ -12,8 +12,15 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { definePersonApiSource } from './sources/PersonApiSource';
-import { personToEntity, unwrapCisProfile } from './transform/personToEntity';
-import { PersonProfileRow, PersonProfileRowSchema } from './transform/schema';
+import { defineBigQuerySource } from './sources/BigQuerySource';
+import { GithubEnrichment, personToEntity } from './transform/personToEntity';
+import {
+  PersonRosterRow,
+  PersonRosterRowSchema,
+  UserRow,
+  UserRowSchema,
+} from './transform/schema';
+import { usersQuery, usersSourceDescription } from './queries';
 
 const DEFAULT_SCHEDULE = {
   frequency: { hours: 6 },
@@ -21,14 +28,16 @@ const DEFAULT_SCHEDULE = {
   initialDelay: { seconds: 30 },
 };
 
-/** CIS endpoint for active staff full profiles, paginated by nextPage. */
-const STAFF_LIST_PATH =
-  '/users/id/all/by_attribute_contains?staff_information.staff=True&fullProfiles=True&active=True';
+/** CIS endpoint for active LDAP (staff) roster, paginated by nextPage. */
+const STAFF_LIST_PATH = '/users/id/all?connectionMethod=ad';
 
 /**
- * Catalog entity provider that turns CIS Person API staff profiles into
- * Backstage `User` entities in the `people` namespace, pushed as a single
- * full mutation per refresh.
+ * Catalog entity provider that produces Backstage `User` entities in the
+ * `people` namespace from the CIS Person API staff roster, enriched with
+ * GitHub identity and display name from BigQuery.
+ *
+ * One entity per roster row, deduped by ref, pushed as a single full
+ * mutation per refresh.
  */
 export class MozcloudPeopleEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
@@ -36,11 +45,12 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
   readonly description: string;
 
   constructor(
-    private readonly source: Source<PersonProfileRow>,
+    private readonly rosterSource: Source<PersonRosterRow>,
+    private readonly usersSource: Source<UserRow>,
     private readonly logger: LoggerService,
     private readonly taskRunner: SchedulerServiceTaskRunner,
   ) {
-    this.description = `people: ${source.description}`;
+    this.description = `people: ${rosterSource.description}`;
   }
 
   getProviderName(): string {
@@ -69,13 +79,34 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
     if (!this.connection) {
       throw new Error('Not initialized');
     }
-    const rows = await this.source.fetchAll();
-    const locationRef = `mozcloud-people:${this.source.description}`;
 
+    const [rosterRows, userRows] = await Promise.all([
+      this.rosterSource.fetchAll(),
+      this.usersSource.fetchAll(),
+    ]);
+
+    // Build lookup map keyed by lowercase email
+    const usersByEmail = new Map<string, UserRow>();
+    for (const u of userRows) {
+      usersByEmail.set(u.email.toLowerCase(), u);
+    }
+
+    const locationRef = `mozcloud-people:${this.rosterSource.description}`;
     const seen = new Set<string>();
     const entities: Entity[] = [];
-    for (const row of rows) {
-      const entity = personToEntity(row, locationRef);
+
+    for (const row of rosterRows) {
+      const bqUser = usersByEmail.get(row.primary_email.toLowerCase());
+      const enrichment: GithubEnrichment | undefined = bqUser
+        ? {
+            name: bqUser.name,
+            githubLogin: bqUser.github_login,
+            githubNodeId: bqUser.github_node_id,
+            githubOrgs: bqUser.github_orgs,
+          }
+        : undefined;
+
+      const entity = personToEntity(row, enrichment, locationRef);
       const ref = `${entity.metadata.namespace}/${entity.metadata.name}`;
       if (seen.has(ref)) continue;
       seen.add(ref);
@@ -93,7 +124,7 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
         entities.length
-      } users from ${rows.length} profiles`,
+      } users from ${rosterRows.length} roster rows`,
     );
   }
 
@@ -104,7 +135,8 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
   ): MozcloudPeopleEntityProvider {
     const authCfg = config.getConfig('auth');
     const apiBaseUrl = config.getString('apiBaseUrl').replace(/\/$/, '');
-    const source = definePersonApiSource<PersonProfileRow>({
+
+    const rosterSource = definePersonApiSource<PersonRosterRow>({
       auth: {
         tokenUrl: authCfg.getString('tokenUrl'),
         audience: authCfg.getString('audience'),
@@ -114,9 +146,24 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
       },
       apiBaseUrl,
       listPath: STAFF_LIST_PATH,
-      schema: PersonProfileRowSchema,
-      unwrap: unwrapCisProfile,
+      schema: PersonRosterRowSchema,
+      unwrap: r => r,
       description: `person-api:${apiBaseUrl}`,
+      logger,
+    });
+
+    const usersBq = config.getConfig('bigqueryUsers').get<{
+      project: string;
+      dataset: string;
+      subgroupMembersTable?: string;
+      billingProject?: string;
+    }>();
+    const usersSource = defineBigQuerySource<UserRow>({
+      query: usersQuery(usersBq),
+      schema: UserRowSchema,
+      description: usersSourceDescription(usersBq),
+      billingProject: usersBq.billingProject,
+      dataProject: usersBq.project,
       logger,
     });
 
@@ -127,6 +174,11 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
       : DEFAULT_SCHEDULE;
     const taskRunner = scheduler.createScheduledTaskRunner(schedule);
 
-    return new MozcloudPeopleEntityProvider(source, logger, taskRunner);
+    return new MozcloudPeopleEntityProvider(
+      rosterSource,
+      usersSource,
+      logger,
+      taskRunner,
+    );
   }
 }

@@ -31,6 +31,7 @@ export interface DefinePersonApiSourceOptions<T> {
 }
 
 interface UsersPage {
+  users?: unknown[];
   Items?: unknown[];
   nextPage?: string | null;
 }
@@ -103,12 +104,10 @@ export function definePersonApiSource<T>(
       const sep = opts.listPath.includes('?') ? '&' : '?';
       let nextPage: string | null | undefined;
       do {
-        const pageQuery = nextPage
-          ? `${sep}nextPage=${encodeURIComponent(nextPage)}`
-          : '';
+        const pageQuery = nextPage ? `${sep}nextPage=${nextPage}` : '';
         const url = `${opts.apiBaseUrl}${opts.listPath}${pageQuery}`;
         const page = await fetchPage(url);
-        for (const item of page.Items ?? []) {
+        for (const item of page.users ?? page.Items ?? []) {
           try {
             const unwrapped = opts.unwrap(item as Record<string, unknown>);
             out.push(opts.schema.parse(unwrapped));

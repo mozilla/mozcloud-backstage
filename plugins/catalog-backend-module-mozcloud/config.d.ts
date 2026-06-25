@@ -83,6 +83,14 @@ export interface Config {
           };
           /** Base URL, e.g. https://person.api.sso.mozilla.com/v2 */
           apiBaseUrl: string;
+          /** BigQuery source for GitHub identity + display-name enrichment (joined by email). */
+          bigqueryUsers: {
+            project: string;
+            dataset: string;
+            /** Defaults to `workgroup_subgroup_members`. */
+            subgroupMembersTable?: string;
+            billingProject?: string;
+          };
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
 

@@ -1,55 +1,110 @@
-import { Entity } from '@backstage/catalog-model';
-import { PersonProfileRow } from './schema';
+import * as crypto from 'crypto';
+import { Entity, EntityLink } from '@backstage/catalog-model';
+import { PersonRosterRow } from './schema';
 import { emailToUserName, pickDefined } from './refs';
 
 /** Backstage namespace for canonical org users sourced from the Person API. */
 export const PEOPLE_NAMESPACE = 'people';
 
-/**
- * Flatten a raw CIS Person API profile. Each top-level field arrives wrapped
- * as `{ value, signature, metadata }` (or `{ values, ... }`); we keep just the
- * underlying value. Fields without a `value`/`values` key (nested structures
- * we don't consume, e.g. `staff_information`) are passed through untouched.
- */
-export function unwrapCisProfile(
-  raw: Record<string, unknown>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, node] of Object.entries(raw)) {
-    if (node && typeof node === 'object' && !Array.isArray(node)) {
-      const obj = node as Record<string, unknown>;
-      if ('value' in obj) {
-        out[key] = obj.value;
-        continue;
-      }
-      if ('values' in obj) {
-        out[key] = obj.values;
-        continue;
-      }
-    }
-    out[key] = node;
-  }
-  return out;
+/** GitHub identity and display name from the BigQuery users table. */
+export interface GithubEnrichment {
+  name?: string | null;
+  githubLogin?: string | null;
+  githubNodeId?: string | null;
+  githubOrgs?: string[];
 }
 
 /**
- * Pure transform: one unwrapped CIS profile -> one Backstage `User` entity in
- * the `people` namespace. The name is `emailToUserName(primary_email)` so the
- * workgroup provider can reference it from email-keyed membership data.
- * `mozilla.org/user-id` carries the CIS `user_id` (== Auth0 `sub`) for the
- * future SSO resolver. No `spec.memberOf` — membership is derived from Group
- * `spec.members`.
+ * Build a Gravatar avatar URL for an email address.
+ *
+ * SHA-256 of the trimmed, lowercased email → hex digest.
+ * Uses the `d=initials` fallback so users without a Gravatar account
+ * get a generated initials avatar instead of a broken image.
+ */
+function gravatarUrl(email: string, name?: string | null): string {
+  const hash = crypto
+    .createHash('sha256')
+    .update(email.trim().toLowerCase())
+    .digest('hex');
+  const nameParam = name ? `&name=${encodeURIComponent(name)}` : '';
+  return `https://gravatar.com/avatar/${hash}?d=initials&s=256${nameParam}`;
+}
+
+/**
+ * Build the set of links for a user entity.
+ *
+ * GitHub link: present when `githubLogin` is provided.
+ * People Directory + DAWG links: only for `@mozilla.com` addresses.
+ */
+function userLinks(email: string, githubLogin?: string | null): EntityLink[] {
+  const links: EntityLink[] = [];
+
+  if (githubLogin) {
+    links.push({
+      url: `https://github.com/${githubLogin}`,
+      title: `@${githubLogin} on GitHub`,
+      icon: 'github',
+    });
+  }
+
+  if (email.endsWith('@mozilla.com')) {
+    links.push({
+      url: `https://people.mozilla.org/s?query=${encodeURIComponent(
+        email,
+      )}&who=staff`,
+      title: 'People Directory Profile',
+    });
+    links.push({
+      url: `https://protosaur.dev/dawg/user/${encodeURIComponent(email)}`,
+      title: `${email} on DAWG`,
+      icon: 'dawg',
+    });
+  }
+
+  return links;
+}
+
+/**
+ * Pure transform: one roster row + optional BigQuery enrichment → one
+ * Backstage `User` entity in the `people` namespace.
+ *
+ * - Name is `emailToUserName(primary_email)` for stable cross-provider refs.
+ * - `displayName` comes from the BigQuery `name` field when present; falls
+ *   back to the email local-part.
+ * - `picture` is always a Gravatar URL derived from the email.
+ * - GitHub annotations are set only when enrichment provides them.
+ * - No `spec.memberOf` — membership is derived from Group `spec.members`.
  */
 export function personToEntity(
-  row: PersonProfileRow,
+  row: PersonRosterRow,
+  enrichment: GithubEnrichment | undefined,
   locationRef: string,
 ): Entity {
-  const fullName = [row.first_name, row.last_name]
-    .filter((p): p is string => Boolean(p))
-    .join(' ')
-    .trim();
   const displayName =
-    fullName || row.primary_username || row.primary_email.split('@')[0];
+    (enrichment?.name?.trim() ?? '') || row.primary_email.split('@')[0];
+
+  const githubOrgsAnnotation =
+    enrichment?.githubOrgs && enrichment.githubOrgs.length > 0
+      ? enrichment.githubOrgs.join(',')
+      : undefined;
+
+  const annotations = pickDefined({
+    'backstage.io/managed-by-location': locationRef,
+    'backstage.io/managed-by-origin-location': locationRef,
+    'mozilla.org/email': row.primary_email,
+    'mozilla.org/user-id': row.user_id,
+    ...(enrichment?.githubLogin
+      ? { 'github.com/user-login': enrichment.githubLogin }
+      : {}),
+    ...(enrichment?.githubNodeId
+      ? { 'github.com/user-id': enrichment.githubNodeId }
+      : {}),
+    ...(githubOrgsAnnotation
+      ? { 'mozilla.org/github-orgs': githubOrgsAnnotation }
+      : {}),
+  });
+
+  const links = userLinks(row.primary_email, enrichment?.githubLogin);
 
   return {
     apiVersion: 'backstage.io/v1alpha1',
@@ -57,20 +112,15 @@ export function personToEntity(
     metadata: {
       name: emailToUserName(row.primary_email),
       namespace: PEOPLE_NAMESPACE,
-      annotations: pickDefined({
-        'backstage.io/managed-by-location': locationRef,
-        'backstage.io/managed-by-origin-location': locationRef,
-        'mozilla.org/email': row.primary_email,
-        'mozilla.org/username': row.primary_username ?? undefined,
-        'mozilla.org/user-id': row.user_id,
-      }),
+      annotations,
+      ...(links.length > 0 ? { links } : {}),
     },
     spec: {
-      profile: pickDefined({
+      profile: {
         displayName,
         email: row.primary_email,
-        picture: row.picture ?? undefined,
-      }),
+        picture: gravatarUrl(row.primary_email, enrichment?.name),
+      },
     },
   };
 }

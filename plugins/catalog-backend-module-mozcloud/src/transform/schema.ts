@@ -139,23 +139,21 @@ export type UserRow = z.infer<typeof UserRowSchema>;
 export type UserMembership = z.infer<typeof UserMembershipSchema>;
 
 /**
- * Unwrapped CIS Person API profile (after {@link unwrapCisProfile} flattens
- * each field's `{ value }` wrapper). Only the fields the catalog needs are
- * modeled; zod strips the rest. `primary_email` is required — a profile
- * without one is skipped.
+ * Row returned by the CIS Person API roster endpoint
+ * (`/users/id/all?connectionMethod=ad`). Fields are flat (no `{value}`
+ * wrapper). `user_id` and `primary_email` are required; `uuid` and `active`
+ * are optional extras the endpoint may include. Unknown keys are stripped.
  */
-export const PersonProfileRowSchema = z
+export const PersonRosterRowSchema = z
   .object({
     user_id: z.string(),
     primary_email: z.string(),
-    primary_username: z.string().nullable().optional(),
-    first_name: z.string().nullable().optional(),
-    last_name: z.string().nullable().optional(),
-    picture: z.string().nullable().optional(),
+    uuid: z.string().optional(),
+    active: z.boolean().optional(),
   })
   .strip();
 
-export type PersonProfileRow = z.infer<typeof PersonProfileRowSchema>;
+export type PersonRosterRow = z.infer<typeof PersonRosterRowSchema>;
 
 /**
  * Row shape returned by `chartsDeploymentsQuery`. One row per
