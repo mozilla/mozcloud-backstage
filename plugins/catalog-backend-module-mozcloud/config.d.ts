@@ -70,7 +70,10 @@ export interface Config {
         };
 
         mozcloudPeople?: {
-          auth: {
+          /**
+           * Reserved for future CIS Person API avatar enrichment — not currently read.
+           */
+          auth?: {
             /** Auth0 token endpoint, e.g. https://auth.mozilla.auth0.com/oauth/token */
             tokenUrl: string;
             /** OAuth2 audience, e.g. api.sso.mozilla.com */
@@ -81,9 +84,12 @@ export interface Config {
             /** Space-separated CIS scopes the credential is granted. */
             scope?: string;
           };
-          /** Base URL, e.g. https://person.api.sso.mozilla.com/v2 */
-          apiBaseUrl: string;
-          /** BigQuery source for GitHub identity + display-name enrichment (joined by email). */
+          /**
+           * Reserved for future CIS Person API avatar enrichment — not currently read.
+           * Base URL, e.g. https://person.api.sso.mozilla.com/v2
+           */
+          apiBaseUrl?: string;
+          /** BigQuery source for the canonical people user roster. */
           bigqueryUsers: {
             project: string;
             dataset: string;

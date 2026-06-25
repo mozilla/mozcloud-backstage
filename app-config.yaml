@@ -294,6 +294,7 @@ catalog:
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
     mozcloudPeople:
+      # Reserved for future CIS Person API avatar enrichment — not currently read.
       auth:
         tokenUrl: https://auth.mozilla.auth0.com/oauth/token
         audience: api.sso.mozilla.com

@@ -1,3 +1,4 @@
+// Reserved: CIS Person API client for a future avatar-enrichment pass; not currently wired into any provider.
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { ZodType, ZodTypeDef } from 'zod';
 import { Source } from './Source';

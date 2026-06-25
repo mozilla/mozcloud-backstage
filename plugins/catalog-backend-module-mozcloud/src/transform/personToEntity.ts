@@ -1,18 +1,10 @@
 import * as crypto from 'crypto';
 import { Entity, EntityLink } from '@backstage/catalog-model';
-import { PersonRosterRow } from './schema';
+import { UserRow } from './schema';
 import { emailToUserName, pickDefined } from './refs';
 
-/** Backstage namespace for canonical org users sourced from the Person API. */
+/** Backstage namespace for canonical org users sourced from BigQuery. */
 export const PEOPLE_NAMESPACE = 'people';
-
-/** GitHub identity and display name from the BigQuery users table. */
-export interface GithubEnrichment {
-  name?: string | null;
-  githubLogin?: string | null;
-  githubNodeId?: string | null;
-  githubOrgs?: string[];
-}
 
 /**
  * Build a Gravatar avatar URL for an email address.
@@ -65,62 +57,50 @@ function userLinks(email: string, githubLogin?: string | null): EntityLink[] {
 }
 
 /**
- * Pure transform: one roster row + optional BigQuery enrichment → one
- * Backstage `User` entity in the `people` namespace.
+ * Pure transform: one BigQuery UserRow → one Backstage `User` entity in the
+ * `people` namespace.
  *
- * - Name is `emailToUserName(primary_email)` for stable cross-provider refs.
+ * - Name is `emailToUserName(email)` for stable cross-provider refs.
  * - `displayName` comes from the BigQuery `name` field when present; falls
  *   back to the email local-part.
  * - `picture` is always a Gravatar URL derived from the email.
- * - GitHub annotations are set only when enrichment provides them.
+ * - GitHub annotations are set only when the row provides them.
  * - No `spec.memberOf` — membership is derived from Group `spec.members`.
  */
-export function personToEntity(
-  row: PersonRosterRow,
-  enrichment: GithubEnrichment | undefined,
-  locationRef: string,
-): Entity {
-  const displayName =
-    (enrichment?.name?.trim() ?? '') || row.primary_email.split('@')[0];
+export function personToEntity(user: UserRow, locationRef: string): Entity {
+  const displayName = user.name?.trim() || '' || user.email.split('@')[0];
 
   const githubOrgsAnnotation =
-    enrichment?.githubOrgs && enrichment.githubOrgs.length > 0
-      ? enrichment.githubOrgs.join(',')
+    user.github_orgs && user.github_orgs.length > 0
+      ? user.github_orgs.join(',')
       : undefined;
 
   const annotations = pickDefined({
     'backstage.io/managed-by-location': locationRef,
     'backstage.io/managed-by-origin-location': locationRef,
-    'mozilla.org/email': row.primary_email,
-    'mozilla.org/user-id': row.user_id,
-    ...(enrichment?.githubLogin
-      ? { 'github.com/user-login': enrichment.githubLogin }
-      : {}),
-    ...(enrichment?.githubNodeId
-      ? { 'github.com/user-id': enrichment.githubNodeId }
-      : {}),
-    ...(githubOrgsAnnotation
-      ? { 'mozilla.org/github-orgs': githubOrgsAnnotation }
-      : {}),
+    'mozilla.org/email': user.email,
+    'github.com/user-login': user.github_login ?? undefined,
+    'github.com/user-id': user.github_node_id ?? undefined,
+    'mozilla.org/github-orgs': githubOrgsAnnotation,
   });
 
-  const links = userLinks(row.primary_email, enrichment?.githubLogin);
+  const links = userLinks(user.email, user.github_login);
 
   return {
     apiVersion: 'backstage.io/v1alpha1',
     kind: 'User',
     metadata: {
-      name: emailToUserName(row.primary_email),
+      name: emailToUserName(user.email),
       namespace: PEOPLE_NAMESPACE,
       annotations,
       ...(links.length > 0 ? { links } : {}),
     },
     spec: {
-      profile: {
+      profile: pickDefined({
         displayName,
-        email: row.primary_email,
-        picture: gravatarUrl(row.primary_email, enrichment?.name),
-      },
+        email: user.email,
+        picture: gravatarUrl(user.email, user.name),
+      }),
     },
   };
 }
