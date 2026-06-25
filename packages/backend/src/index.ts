@@ -70,6 +70,11 @@ backend.add(import('@backstage/plugin-events-backend-module-github'));
 backend.add(import('@backstage/plugin-auth-backend-module-gcp-iap-provider'));
 
 //
+// Auth0 auth provider
+//
+backend.add(import('@backstage/plugin-auth-backend-module-auth0-provider'));
+
+//
 // mozcloud module for the catalog backend plugin
 // -- this will read mozcloud workgroup definitions and generate group & user entities for us
 //

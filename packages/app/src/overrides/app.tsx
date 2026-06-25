@@ -1,11 +1,13 @@
+import { configApiRef, useApi } from '@backstage/core-plugin-api';
+
 import {
   AppRootElementBlueprint,
-  configApiRef,
   createFrontendModule,
-  useApi,
 } from '@backstage/frontend-plugin-api';
+
 import {
   AlertDisplay,
+  IdentityProviders,
   OAuthRequestDialog,
   ProxiedSignInPage,
   SignInPage,
@@ -20,7 +22,12 @@ import { UnifiedThemeProvider } from '@backstage/theme';
 import LightIcon from '@material-ui/icons/WbSunny';
 import DarkIcon from '@material-ui/icons/Brightness2';
 import { Sidebar } from '../components/Root';
-import { scmAuthApi, scmIntegrationsApi } from '../apis';
+import {
+  scmAuthApi,
+  scmIntegrationsApi,
+  auth0AuthApiRef,
+  auth0Auth,
+} from '../apis';
 import { mozillaDarkTheme, mozillaLightTheme } from '../theme/mozilla';
 import { GitHubIcon, DawgIcon } from '../components/icons';
 
@@ -29,10 +36,20 @@ const signInPageExtension = SignInPageBlueprint.make({
     loader: async () => props => {
       const configApi = useApi(configApiRef);
       const env = configApi.getOptionalString('auth.environment');
+      const providers: IdentityProviders = [];
       if (env === 'dev' || env === 'development') {
-        return <SignInPage {...props} providers={['guest']} />;
+        providers.push('guest');
+      } else {
+        providers.push({
+          id: 'auth0',
+          title: 'Mozilla Auth0',
+          message: 'Signing with Mozilla SSO',
+          apiRef: auth0AuthApiRef,
+        });
       }
-      return <ProxiedSignInPage {...props} provider="gcpIap" />;
+
+      return <SignInPage {...props} providers={providers} />;
+      // return <ProxiedSignInPage {...props} provider="gcpIap" />;
     },
   },
 });
@@ -101,6 +118,7 @@ export const appModule = createFrontendModule({
   extensions: [
     scmIntegrationsApi,
     scmAuthApi,
+    auth0Auth,
     signInPageExtension,
     sidebarExtension,
     alertDisplayElement,
