@@ -50,3 +50,5 @@ site
 e2e-test-report/
 
 .venv
+
+docs/superpowers/*
