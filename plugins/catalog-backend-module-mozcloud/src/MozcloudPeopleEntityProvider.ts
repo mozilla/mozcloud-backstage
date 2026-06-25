@@ -12,7 +12,10 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { defineBigQuerySource } from './sources/BigQuerySource';
-import { personToEntity } from './transform/personToEntity';
+import {
+  personToEntity,
+  allStaffGroupEntity,
+} from './transform/personToEntity';
 import { UserRow, UserRowSchema } from './transform/schema';
 import { usersQuery, usersSourceDescription } from './queries';
 
@@ -83,6 +86,9 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
       entities.push(entity);
     }
 
+    // The default all-staff group every people user belongs to.
+    entities.push(allStaffGroupEntity(locationRef));
+
     await this.connection.applyMutation({
       type: 'full',
       entities: entities.map(entity => ({
@@ -93,8 +99,8 @@ export class MozcloudPeopleEntityProvider implements EntityProvider {
 
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
-        entities.length
-      } users from ${rows.length} rows`,
+        rows.length
+      } users + all-staff group`,
     );
   }
 

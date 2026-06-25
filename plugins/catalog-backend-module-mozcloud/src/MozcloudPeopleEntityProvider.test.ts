@@ -73,7 +73,13 @@ describe('MozcloudPeopleEntityProvider', () => {
     expect(refs).toEqual([
       'user:people/alice-mozilla-com',
       'user:people/bob-mozilla-com',
+      'group:people/all-staff',
     ]);
+
+    // every people user belongs to the default all-staff group
+    for (const u of entities.filter(e => e.kind === 'User')) {
+      expect((u.spec as any).memberOf).toEqual(['group:people/all-staff']);
+    }
 
     for (const e of captured[0].entities) {
       expect(e.locationKey).toBe('MozcloudPeopleEntityProvider');
@@ -110,6 +116,13 @@ describe('MozcloudPeopleEntityProvider', () => {
     await provider.connect(connection);
 
     if (captured[0].type !== 'full') throw new Error('unreachable');
-    expect(captured[0].entities).toHaveLength(1);
+    const entities = captured[0].entities.map(e => e.entity);
+    // one deduped user + the all-staff group
+    expect(entities.filter(e => e.kind === 'User')).toHaveLength(1);
+    expect(
+      entities.filter(
+        e => e.kind === 'Group' && e.metadata.name === 'all-staff',
+      ),
+    ).toHaveLength(1);
   });
 });

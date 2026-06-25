@@ -1,4 +1,4 @@
-import { personToEntity } from './personToEntity';
+import { personToEntity, allStaffGroupEntity } from './personToEntity';
 import { UserRowSchema } from './schema';
 import { emailToUserName } from './refs';
 
@@ -173,8 +173,23 @@ describe('personToEntity', () => {
     ).toBeUndefined();
   });
 
-  it('sets spec.memberOf to an empty array (required by the User schema; membership comes from Group.spec.members)', () => {
+  it('sets spec.memberOf to the all-staff group', () => {
     const e = personToEntity(fullUser, LOCATION);
-    expect((e.spec as any).memberOf).toEqual([]);
+    expect((e.spec as any).memberOf).toEqual(['group:people/all-staff']);
+  });
+});
+
+describe('allStaffGroupEntity', () => {
+  it('builds the all-staff Group in the people namespace', () => {
+    const g = allStaffGroupEntity(LOCATION);
+    expect(g.kind).toBe('Group');
+    expect(g.metadata.namespace).toBe('people');
+    expect(g.metadata.name).toBe('all-staff');
+    expect((g.spec as any).type).toBe('organization');
+    expect((g.spec as any).children).toEqual([]);
+    expect((g.spec as any).members).toEqual([]);
+    expect(g.metadata.annotations?.['backstage.io/managed-by-location']).toBe(
+      LOCATION,
+    );
   });
 });

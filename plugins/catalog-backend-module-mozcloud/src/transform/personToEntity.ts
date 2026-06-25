@@ -6,6 +6,38 @@ import { emailToUserName, pickDefined } from './refs';
 /** Backstage namespace for canonical org users sourced from BigQuery. */
 export const PEOPLE_NAMESPACE = 'people';
 
+/** Name of the default "all staff" Group every people user belongs to. */
+export const ALL_STAFF_GROUP_NAME = 'all-staff';
+/** Entity ref of the all-staff Group, e.g. for `spec.memberOf`. */
+export const ALL_STAFF_GROUP_REF = `group:${PEOPLE_NAMESPACE}/${ALL_STAFF_GROUP_NAME}`;
+
+/**
+ * The default "all staff" Group. Every people user declares membership via
+ * `spec.memberOf` (so the catalog derives the relation without a giant
+ * `spec.members` array here). Gives every staff member at least one group,
+ * and a single well-known ref usable as a default owner.
+ */
+export function allStaffGroupEntity(locationRef: string): Entity {
+  return {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Group',
+    metadata: {
+      name: ALL_STAFF_GROUP_NAME,
+      namespace: PEOPLE_NAMESPACE,
+      description: 'All Mozilla staff',
+      annotations: pickDefined({
+        'backstage.io/managed-by-location': locationRef,
+        'backstage.io/managed-by-origin-location': locationRef,
+      }),
+    },
+    spec: {
+      type: 'organization',
+      children: [],
+      members: [],
+    },
+  };
+}
+
 /**
  * Build a Gravatar avatar URL for an email address.
  *
@@ -65,8 +97,8 @@ function userLinks(email: string, githubLogin?: string | null): EntityLink[] {
  *   back to the email local-part.
  * - `picture` is always a Gravatar URL derived from the email.
  * - GitHub annotations are set only when the row provides them.
- * - `spec.memberOf` is empty (required by the User schema); membership is
- *   derived from the workgroup Groups' `spec.members`.
+ * - `spec.memberOf` is the default all-staff group; specific workgroup
+ *   memberships are derived from the workgroup Groups' `spec.members`.
  */
 export function personToEntity(user: UserRow, locationRef: string): Entity {
   const displayName = user.name?.trim() || '' || user.email.split('@')[0];
@@ -102,10 +134,10 @@ export function personToEntity(user: UserRow, locationRef: string): Entity {
         email: user.email,
         picture: gravatarUrl(user.email, user.name),
       }),
-      // The User kind schema requires `memberOf`. We leave it empty here:
-      // the actual membership relations are derived by the catalog from the
-      // workgroup Groups' `spec.members` (which reference these people users).
-      memberOf: [],
+      // Every staff member belongs to the default all-staff group; specific
+      // workgroup memberships are layered on by the workgroup provider's
+      // Group `spec.members`.
+      memberOf: [ALL_STAFF_GROUP_REF],
     },
   };
 }
