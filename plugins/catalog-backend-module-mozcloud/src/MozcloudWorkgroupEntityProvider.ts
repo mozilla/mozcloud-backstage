@@ -12,7 +12,7 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { workgroupToEntities } from './transform/workgroupToEntities';
-import { userToEntities } from './transform/userToEntities';
+import { emailToUserName, subgroupName } from './transform/refs';
 import {
   UserRow,
   UserRowSchema,
@@ -41,10 +41,10 @@ const DEFAULT_SCHEDULE = {
  *    Drives Group entities (workgroup + subgroup), both in the
  *    `workgroups` namespace so they don't collide with the GitHub Org
  *    provider's Groups in `default`.
- *  - `users` source — one row per human user, with GitHub
- *    metadata and the `(workgroup, subgroup)` memberships they hold.
- *    Drives User entities in the `workgroups` namespace and back-fills
- *    each subgroup's `spec.members` so Group pages list humans.
+ *  - `users` source — one row per human user, with the `(workgroup,
+ *    subgroup)` memberships they hold. Used only to back-fill each
+ *    subgroup's `spec.members` with `user:people/<name>` refs.
+ *    User entities themselves are emitted by MozcloudPeopleEntityProvider.
  */
 export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
@@ -94,23 +94,22 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     ]);
 
     const wgLocationRef = `mozcloud-workgroups:${this.workgroupsSource.description}`;
-    const userLocationRef = this.usersSource
-      ? `mozcloud-users:${this.usersSource.description}`
-      : wgLocationRef;
     const raw: Entity[] = [];
-
     for (const wg of workgroups) {
       raw.push(...workgroupToEntities(wg, wgLocationRef));
     }
-    for (const u of users) {
-      raw.push(...userToEntities(u, userLocationRef));
-    }
 
-    const merged = mergeEntities(raw);
+    const deduped = dedupeByRef(raw);
+    const groupMembers = buildGroupMembers(users);
+    for (const e of deduped) {
+      if (e.kind !== 'Group') continue;
+      const members = groupMembers.get(entityRef(e));
+      if (members) (e.spec as { members?: string[] }).members = members;
+    }
 
     await this.connection.applyMutation({
       type: 'full',
-      entities: merged.map(entity => ({
+      entities: deduped.map(entity => ({
         entity,
         locationKey: this.getProviderName(),
       })),
@@ -118,7 +117,7 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
 
     this.logger.info(
       `${this.getProviderName()}: applied full mutation with ${
-        merged.length
+        deduped.length
       } entities from ${workgroups.length} workgroups and ${
         users.length
       } users`,
@@ -182,44 +181,37 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
 }
 
 /**
- * Dedupe entities by `kind:namespace/name`, then back-fill each subgroup
- * Group's `spec.members` from the User entities' `spec.memberOf`.
- *
- * Source of truth for membership is the User side — User.spec.memberOf is
- * populated by `userToEntities` from the user row's `memberships[]`. We
- * walk those refs to build a reverse map (group -> user refs) and write
- * the resulting `members` array back onto each Group so the catalog UI
- * shows membership on both sides.
+ * Build `group:workgroups/<wg>-<sub>` -> sorted unique `user:people/<name>`
+ * refs from the membership rows. The people users themselves are emitted by
+ * MozcloudPeopleEntityProvider; here we only reference them so each subgroup
+ * Group's `spec.members` resolves.
  */
-function mergeEntities(entities: Entity[]): Entity[] {
-  const out = new Map<string, Entity>();
+export function buildGroupMembers(users: UserRow[]): Map<string, string[]> {
+  const sets = new Map<string, Set<string>>();
+  for (const u of users) {
+    const ref = `user:people/${emailToUserName(u.email)}`;
+    for (const m of u.memberships) {
+      const key = `group:workgroups/${subgroupName(
+        m.workgroup,
+        m.subgroup,
+      )}`.toLowerCase();
+      const set = sets.get(key) ?? new Set<string>();
+      set.add(ref);
+      sets.set(key, set);
+    }
+  }
+  const out = new Map<string, string[]>();
+  for (const [key, set] of sets) out.set(key, Array.from(set).sort());
+  return out;
+}
 
+/** Dedupe entities by `kind:namespace/name` (first wins). */
+function dedupeByRef(entities: Entity[]): Entity[] {
+  const out = new Map<string, Entity>();
   for (const e of entities) {
     const key = entityRef(e);
-    if (!out.has(key)) {
-      out.set(key, e);
-    }
+    if (!out.has(key)) out.set(key, e);
   }
-
-  const groupMembers = new Map<string, Set<string>>();
-  for (const e of out.values()) {
-    if (e.kind !== 'User') continue;
-    const userRef = entityRef(e);
-    for (const groupShortRef of (e.spec as { memberOf?: string[] }).memberOf ??
-      []) {
-      const groupKey = `group:${groupShortRef}`.toLowerCase();
-      const set = groupMembers.get(groupKey) ?? new Set<string>();
-      set.add(userRef);
-      groupMembers.set(groupKey, set);
-    }
-  }
-
-  for (const [groupKey, members] of groupMembers) {
-    const group = out.get(groupKey);
-    if (!group || group.kind !== 'Group') continue;
-    (group.spec as { members?: string[] }).members = Array.from(members).sort();
-  }
-
   return Array.from(out.values());
 }
 

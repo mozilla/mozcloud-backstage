@@ -228,9 +228,9 @@ auth:
     # filters ("My Groups", "owned by me") and permission checks behave
     # as they would for the SSO'd user.
     guest:
-      userEntityRef: user:workgroups/wstuckey-mozilla-com
+      userEntityRef: user:people/wstuckey-mozilla-com
       ownershipEntityRefs:
-        - user:workgroups/wstuckey-mozilla-com
+        - user:people/wstuckey-mozilla-com
   experimentalClientIdMetadataDocuments:
     enabled: true
 
@@ -293,6 +293,23 @@ catalog:
           frequency: { minutes: 30 }
           timeout: { minutes: 5 }
           initialDelay: { seconds: 30 }
+    mozcloudPeople:
+      # Reserved for future CIS Person API avatar enrichment — not currently read.
+      auth:
+        tokenUrl: https://auth.mozilla.auth0.com/oauth/token
+        audience: api.sso.mozilla.com
+        clientId: ${PERSON_API_CLIENT_ID}
+        clientSecret: ${PERSON_API_CLIENT_SECRET}
+        scope: 'classification:workgroup:staff_only'
+      apiBaseUrl: https://person.api.sso.mozilla.com/v2
+      bigqueryUsers:
+        project: mozdata
+        dataset: mozcloud
+        billingProject: moz-fx-backstage-nonprod
+      schedule:
+        frequency: { hours: 6 }
+        timeout: { minutes: 10 }
+        initialDelay: { seconds: 30 }
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration

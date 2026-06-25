@@ -3,16 +3,19 @@ import {
   createBackendModule,
 } from '@backstage/backend-plugin-api';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
+import { MozcloudPeopleEntityProvider } from './MozcloudPeopleEntityProvider';
 import { MozcloudTenantEntityProvider } from './MozcloudTenantEntityProvider';
 import { MozcloudWorkgroupEntityProvider } from './MozcloudWorkgroupEntityProvider';
 
 /**
- * Backstage backend module that registers the mozcloud tenant and
- * workgroup catalog entity providers under the existing catalog plugin.
+ * Backstage backend module that registers the mozcloud tenant, workgroup,
+ * and people (User entities in the `people` namespace) catalog entity
+ * providers under the existing catalog plugin.
  *
- * Configuration lives under `catalog.providers.mozcloud` — see config.d.ts.
- * Each provider owns its own BigQuery wiring via `createFromConfig`; this
- * module just hands the right config block to each.
+ * Tenant and workgroup configuration lives under `catalog.providers.mozcloud`;
+ * people configuration lives under `catalog.providers.mozcloudPeople` — see
+ * config.d.ts. Each provider owns its own BigQuery wiring via
+ * `createFromConfig`; this module just hands the right config block to each.
  */
 export const catalogModuleMozcloud = createBackendModule({
   pluginId: 'catalog',
@@ -27,6 +30,21 @@ export const catalogModuleMozcloud = createBackendModule({
         scheduler: coreServices.scheduler,
       },
       async init({ catalog, config, logger, reader, scheduler }) {
+        const peopleCfg = config.getOptionalConfig(
+          'catalog.providers.mozcloudPeople',
+        );
+        if (peopleCfg) {
+          const provider = MozcloudPeopleEntityProvider.createFromConfig(
+            peopleCfg,
+            logger,
+            scheduler,
+          );
+          catalog.addEntityProvider(provider);
+          logger.info(
+            `Registered mozcloud people provider (${provider.description})`,
+          );
+        }
+
         const root = config.getOptionalConfig('catalog.providers.mozcloud');
         if (!root) {
           logger.info(

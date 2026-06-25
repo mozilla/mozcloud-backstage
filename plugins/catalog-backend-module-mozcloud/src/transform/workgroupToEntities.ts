@@ -45,10 +45,10 @@ function workgroupLinks(workgroup: string, subgroup?: string): EntityLink[] {
  *   - 1 parent Group         (group:workgroups/<workgroup>)
  *   - N subgroup Groups      (group:workgroups/<workgroup>-<subname>)
  *
- * User entities are NOT emitted here — `userToEntities` (fed by
- * `usersQuery`) owns those. The provider merges User.spec.memberOf back
- * into each subgroup's `spec.members` so Group entity pages still list
- * their human members.
+ * User entities are NOT emitted here. The MozcloudPeopleEntityProvider owns
+ * `User` entities (in the `people` namespace); the workgroup provider fills
+ * each subgroup's `spec.members` with `user:people/…` refs built from the
+ * users source.
  */
 export function workgroupToEntities(
   wg: WorkgroupRow,

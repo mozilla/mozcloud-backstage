@@ -139,6 +139,23 @@ export type UserRow = z.infer<typeof UserRowSchema>;
 export type UserMembership = z.infer<typeof UserMembershipSchema>;
 
 /**
+ * Row returned by the CIS Person API roster endpoint
+ * (`/users/id/all?connectionMethod=ad`). Fields are flat (no `{value}`
+ * wrapper). `user_id` and `primary_email` are required; `uuid` and `active`
+ * are optional extras the endpoint may include. Unknown keys are stripped.
+ */
+export const PersonRosterRowSchema = z
+  .object({
+    user_id: z.string(),
+    primary_email: z.string(),
+    uuid: z.string().optional(),
+    active: z.boolean().optional(),
+  })
+  .strip();
+
+export type PersonRosterRow = z.infer<typeof PersonRosterRowSchema>;
+
+/**
  * Row shape returned by `chartsDeploymentsQuery`. One row per
  * `(tenant, chart_name)` combining the chart's declared image refs from
  * `tenants.globals.deployment.charts[]` with the flat deployment facts

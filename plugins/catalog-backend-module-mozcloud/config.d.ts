@@ -69,6 +69,37 @@ export interface Config {
           schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
         };
 
+        mozcloudPeople?: {
+          /**
+           * Reserved for future CIS Person API avatar enrichment — not currently read.
+           */
+          auth?: {
+            /** Auth0 token endpoint, e.g. https://auth.mozilla.auth0.com/oauth/token */
+            tokenUrl: string;
+            /** OAuth2 audience, e.g. api.sso.mozilla.com */
+            audience: string;
+            clientId: string;
+            /** @visibility secret */
+            clientSecret: string;
+            /** Space-separated CIS scopes the credential is granted. */
+            scope?: string;
+          };
+          /**
+           * Reserved for future CIS Person API avatar enrichment — not currently read.
+           * Base URL, e.g. https://person.api.sso.mozilla.com/v2
+           */
+          apiBaseUrl?: string;
+          /** BigQuery source for the canonical people user roster. */
+          bigqueryUsers: {
+            project: string;
+            dataset: string;
+            /** Defaults to `workgroup_subgroup_members`. */
+            subgroupMembersTable?: string;
+            billingProject?: string;
+          };
+          schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
+        };
+
         workgroups?: {
           sources: {
             /**

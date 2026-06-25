@@ -66,15 +66,6 @@ export function emailToUserName(email: string): string {
 }
 
 /**
- * Backstage entity ref for a workgroup user (namespace = workgroups).
- * Users in this namespace are distinct from the GitHub Org provider's
- * users in the default namespace.
- */
-export function userRef(email: string): string {
-  return `user:workgroups/${emailToUserName(email)}`;
-}
-
-/**
  * Resolve a cross-workgroup reference like `sre/admins` (as it appears
  * in subgroup composition) into a Backstage Group entity ref.
  */
