@@ -17,46 +17,52 @@ const DEFAULT_SUBGROUP_MEMBERS_TABLE = 'workgroup_subgroup_members';
 const DEFAULT_PERSON_DIRECTORY_TABLE = 'mozdata.workday.person_mozilla_com';
 
 /**
- * One row per distinct user (by `value`, the email) aggregating:
+ * One row per staff member, sourced from the Workday person directory and
+ * LEFT JOINed to workgroup membership so staff who aren't in any workgroup
+ * still appear (with an empty `memberships` array):
  *
- * - Display name (`name`) — LEFT JOINed from the Workday person directory
- *   so non-employees (gmail, contractor addresses, etc.) get NULL rather
- *   than the lookup failing the whole query.
+ * - `email` / `name` — from the person directory; this is the base set of
+ *   users (all staff in the directory).
  * - GitHub identity (`github_login`, `github_node_id`, `github_orgs`) —
- *   per-user, the same across every membership row for that user. We
- *   pick a representative non-null `github_login` / `github_node_id` via
- *   `MAX` and union `github_orgs` across rows so the result tolerates
- *   partial backfills.
+ *   from the membership rows when present. `MAX` picks a representative
+ *   non-null id and `github_orgs` is unioned across a user's rows, so the
+ *   result tolerates partial backfills.
  * - `memberships[]` — every `(workgroup, subgroup)` the user belongs to,
- *   sorted for deterministic output.
- *
- * Only `member_type = 'user'` rows are considered — workgroup, service-
- * account, and google-group bindings stay with the workgroups source.
+ *   sorted; empty for staff who aren't in a workgroup. Only
+ *   `member_type = 'user'` bindings are joined — workgroup, service-account
+ *   and google-group bindings stay with the workgroups source.
  */
 export function usersQuery(cfg: UsersQueryConfig): string {
   const subgroupMembersTable =
     cfg.subgroupMembersTable ?? DEFAULT_SUBGROUP_MEMBERS_TABLE;
-  const memTable = `\`${cfg.project}.${cfg.dataset}.${subgroupMembersTable}\``;
+  const membershipTable = `\`${cfg.project}.${cfg.dataset}.${subgroupMembersTable}\``;
   const personTable = `\`${
     cfg.personDirectoryTable ?? DEFAULT_PERSON_DIRECTORY_TABLE
   }\``;
 
-  // NOTE: due to permission issues. we have temprorarily disabled the Full Name lookups
-  // from workday tables.
+  // `name` is read from the Workday person directory, so the executing
+  // BigQuery identity must have read access to `personDirectoryTable`.
   return `
     WITH agg AS (
       SELECT
-        m.value AS email,
-        null AS name,
+        p.email AS email,
+        p.name AS name,
         MAX(m.github_login) AS github_login,
         MAX(m.github_node_id) AS github_node_id,
         ARRAY_CONCAT_AGG(m.github_orgs) AS github_orgs_concat,
-        ARRAY_AGG(STRUCT(m.workgroup, m.subgroup) ORDER BY m.workgroup, m.subgroup) AS memberships
-      FROM ${memTable} m
-      -- LEFT JOIN ${personTable} p
-      --   ON LOWER(p.email) = LOWER(m.value)
-      WHERE m.member_type = 'user'
-      GROUP BY m.value
+        ARRAY_AGG(
+          IF(
+            m.workgroup IS NULL,
+            NULL,
+            STRUCT(m.workgroup AS workgroup, m.subgroup AS subgroup)
+          )
+          IGNORE NULLS
+          ORDER BY m.workgroup, m.subgroup
+        ) AS memberships
+      FROM ${personTable} p
+      LEFT JOIN ${membershipTable} m
+        ON LOWER(p.email) = LOWER(m.value) AND m.member_type = 'user'
+      GROUP BY p.email, p.name
     )
     SELECT
       email,
