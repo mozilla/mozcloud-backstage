@@ -5,5 +5,7 @@ coverage
 node_modules
 **/.venv
 **/node_modules
-e2e-test-report
 plugins/glean/src/metrics
+
+# release-please generates CHANGELOG.md files; its formatting isn't Prettier-compatible
+CHANGELOG.md
