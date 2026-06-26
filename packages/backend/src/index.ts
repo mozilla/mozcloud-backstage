@@ -72,7 +72,10 @@ backend.add(import('@backstage/plugin-auth-backend-module-gcp-iap-provider'));
 //
 // Auth0 auth provider
 //
-backend.add(import('@backstage/plugin-auth-backend-module-auth0-provider'));
+// Custom module: same as @backstage/plugin-auth-backend-module-auth0-provider
+// but drops the hardcoded `prompt=consent` from the authorize request so a
+// first-party Auth0 app skips the consent screen. See the module for details.
+backend.add(import('./modules/authModuleAuth0NoConsentProvider'));
 
 //
 // mozcloud module for the catalog backend plugin
