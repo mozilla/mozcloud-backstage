@@ -52,7 +52,7 @@ export const auth0Auth = ApiBlueprint.make({
             icon: () => null,
           },
           environment: configApi.getOptionalString('auth.environment'),
-          defaultScopes: ['openid', 'email', 'offline_access'],
+          defaultScopes: ['openid', 'email', 'profile', 'offline_access'],
         }),
     }),
 });
