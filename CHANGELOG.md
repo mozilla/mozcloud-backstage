@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.5...v0.1.6) (2026-06-29)
+
+
+### Bug Fixes
+
+* **ci:** build & push release image via release-please output ([57c54be](https://github.com/mozilla/mozcloud-backstage/commit/57c54bedd9ae78b022c38b2a6fa2e8b69506f947))
+* **ci:** trigger build-and-push for release-please releases ([0fcbcbb](https://github.com/mozilla/mozcloud-backstage/commit/0fcbcbb39076c9c54e2ac86e22618450e3cf9fbc))
+
 ## [0.1.5](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.4...v0.1.5) (2026-06-26)
 
 
