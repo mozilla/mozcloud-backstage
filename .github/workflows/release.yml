@@ -11,17 +11,42 @@ jobs:
   # -----------------------------------------------------------------
   # Push to main → release-please opens/updates the Release PR.
   # When the Release PR merges, the next main run pushes the vX.Y.Z
-  # tag and creates the GitHub Release. The existing "build and push
-  # to GAR" workflow triggers on that tag and builds the image with
-  # the released version (it tags from `git describe --tags`).
+  # tag and creates the GitHub Release.
+  #
+  # The tag is pushed with the default GITHUB_TOKEN, and GitHub does not
+  # trigger workflows from events created by GITHUB_TOKEN. So we cannot
+  # rely on a `tags:` trigger in build-and-push-to-gar.yml — instead the
+  # `build` job below calls that workflow directly when a release was
+  # created, passing the released tag as the image tag.
   # -----------------------------------------------------------------
   release-please:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      # release-please-action sets top-level outputs for a single root
+      # package; the `.--`-prefixed fallbacks cover manifest-mode naming.
+      release_created: ${{ steps.release.outputs.release_created || steps.release.outputs['.--release_created'] }}
+      tag_name: ${{ steps.release.outputs.tag_name || steps.release.outputs['.--tag_name'] }}
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # When a release was created, build & push the image tagged with the
+  # released version. Runs only on the release run, not on every main push
+  # (continuous main builds still happen via build-and-push-to-gar.yml's
+  # own `push: branches: [main]` trigger).
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/build-and-push-to-gar.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
