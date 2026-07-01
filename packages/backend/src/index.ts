@@ -88,4 +88,10 @@ backend.add(import('@internal/plugin-catalog-backend-module-mozcloud'));
 //
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
+//
+// DevTools plugin (info/config/external-deps). Access is gated by the
+// custom permission policy in ./modules/permissionPolicyDevToolsAdmin.
+//
+backend.add(import('@backstage/plugin-devtools-backend'));
+
 backend.start();
