@@ -15,6 +15,7 @@ import homePlugin from '@backstage/plugin-home/alpha';
 import authPlugin from '@backstage/plugin-auth';
 import gleanPlugin from 'backstage-plugin-glean';
 import grafanaPlugin from '@backstage-community/plugin-grafana/alpha';
+import devToolsPlugin from '@backstage/plugin-devtools/alpha';
 // import { techDocsReportIssueAddonModule } from '@backstage/plugin-techdocs-module-addons-contrib/alpha';
 
 import { appModule } from './overrides/app';
@@ -42,6 +43,7 @@ const features: FrontendFeature[] = [
   authPlugin,
   gleanPlugin,
   grafanaPlugin,
+  devToolsPlugin,
 ];
 
 const app = createApp({
