@@ -33,10 +33,9 @@ backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
-// See https://backstage.io/docs/permissions/getting-started for how to create your own permission policy
-backend.add(
-  import('@backstage/plugin-permission-backend-module-allow-all-policy'),
-);
+// Custom policy: allow-all EXCEPT DevTools permissions, which require
+// membership of the cloud-engineering/admin workgroup subgroup.
+backend.add(import('./modules/permissionPolicyDevToolsAdmin'));
 
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));
