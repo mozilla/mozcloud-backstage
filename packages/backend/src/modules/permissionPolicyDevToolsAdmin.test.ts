@@ -8,10 +8,8 @@ import type {
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
 import {
-  devToolsAdministerPermission,
-  devToolsConfigReadPermission,
-  devToolsExternalDependenciesReadPermission,
   devToolsInfoReadPermission,
+  devToolsPermissions,
 } from '@backstage/plugin-devtools-common';
 import {
   DEVTOOLS_ADMIN_GROUP,
@@ -35,13 +33,6 @@ const query = (permission: PolicyQuery['permission']): PolicyQuery => ({
 
 describe('DevToolsAdminPermissionPolicy', () => {
   const policy = new DevToolsAdminPermissionPolicy();
-
-  const devToolsPermissions = [
-    devToolsAdministerPermission,
-    devToolsInfoReadPermission,
-    devToolsConfigReadPermission,
-    devToolsExternalDependenciesReadPermission,
-  ];
 
   it.each(devToolsPermissions)(
     'ALLOWs %s for members of the admin group',

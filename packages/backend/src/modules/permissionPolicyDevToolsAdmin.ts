@@ -10,12 +10,7 @@ import type {
   PolicyQuery,
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
-import {
-  devToolsAdministerPermission,
-  devToolsConfigReadPermission,
-  devToolsExternalDependenciesReadPermission,
-  devToolsInfoReadPermission,
-} from '@backstage/plugin-devtools-common';
+import { devToolsPermissions } from '@backstage/plugin-devtools-common';
 
 /**
  * Members of this workgroup subgroup (owner term: the `cloud-engineering/admin`
@@ -23,23 +18,18 @@ import {
  */
 export const DEVTOOLS_ADMIN_GROUP = 'group:workgroups/cloud-engineering-admin';
 
-const DEVTOOLS_PERMISSIONS = [
-  devToolsAdministerPermission,
-  devToolsInfoReadPermission,
-  devToolsConfigReadPermission,
-  devToolsExternalDependenciesReadPermission,
-];
-
 /**
  * Allows every permission (preserving the previous allow-all behavior) except
- * DevTools permissions, which require membership of {@link DEVTOOLS_ADMIN_GROUP}.
+ * DevTools permissions (all permissions exported from
+ * `@backstage/plugin-devtools-common` via `devToolsPermissions`), which
+ * require membership of {@link DEVTOOLS_ADMIN_GROUP}.
  */
 export class DevToolsAdminPermissionPolicy implements PermissionPolicy {
   async handle(
     request: PolicyQuery,
     user?: PolicyQueryUser,
   ): Promise<PolicyDecision> {
-    const isDevToolsRequest = DEVTOOLS_PERMISSIONS.some(permission =>
+    const isDevToolsRequest = devToolsPermissions.some(permission =>
       isPermission(request.permission, permission),
     );
 
