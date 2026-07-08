@@ -14,7 +14,18 @@ import {
 } from '@backstage/catalog-model';
 import type { AuthService } from '@backstage/backend-plugin-api';
 
-/** Logins whose Workday local-part differs from their GCP IAM local-part. */
+/**
+ * Logins whose Workday local-part differs from their GCP IAM local-part.
+ *
+ * SECURITY / MAINTENANCE: linking is by bare local-part
+ * (`user:people/<lp>` ↔ `user:gcp/<lp>`), which assumes mozilla.com local-parts
+ * are unique per person and align 1:1 with GCP IAM local-parts. This map is the
+ * hand-maintained exception list for the mismatches. Because the linked gcp
+ * identity's groups flow into `ownershipEntityRefs` (and thus permission gates
+ * like DevTools admin), add an entry here whenever a new person's GCP IAM
+ * local-part differs from their Workday local-part — and never map a login to a
+ * gcp local-part that belongs to a different human. Owner: Cloud Engineering.
+ */
 export const STATIC_LOGIN_TO_GCP: Record<string, string> = {
   jbuckley: 'jbuck',
   jthomas: 'jason',
