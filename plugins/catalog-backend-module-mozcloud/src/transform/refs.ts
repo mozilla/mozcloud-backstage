@@ -66,6 +66,15 @@ export function emailToUserName(email: string): string {
 }
 
 /**
+ * The email local-part, lowercased — the stable People entity name. Matches how
+ * `emailLocalPartMatchingUserEntityName` derives the name at sign-in
+ * (`email.split('@')[0]`), so login resolves to `user:people/<localPart>`.
+ */
+export function emailLocalPart(email: string): string {
+  return email.split('@')[0].toLowerCase();
+}
+
+/**
  * Resolve a cross-workgroup reference like `sre/admins` (as it appears
  * in subgroup composition) into a Backstage Group entity ref.
  */

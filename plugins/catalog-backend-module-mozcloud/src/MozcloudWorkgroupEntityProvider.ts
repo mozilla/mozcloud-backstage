@@ -12,7 +12,7 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { Source } from './sources/Source';
 import { workgroupToEntities } from './transform/workgroupToEntities';
-import { emailToUserName, subgroupName } from './transform/refs';
+import { emailLocalPart, subgroupName } from './transform/refs';
 import {
   UserRow,
   UserRowSchema,
@@ -189,7 +189,7 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
 export function buildGroupMembers(users: UserRow[]): Map<string, string[]> {
   const sets = new Map<string, Set<string>>();
   for (const u of users) {
-    const ref = `user:people/${emailToUserName(u.email)}`;
+    const ref = `user:people/${emailLocalPart(u.email)}`;
     for (const m of u.memberships) {
       const key = `group:workgroups/${subgroupName(
         m.workgroup,

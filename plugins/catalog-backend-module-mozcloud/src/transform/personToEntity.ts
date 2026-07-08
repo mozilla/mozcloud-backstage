@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import { Entity, EntityLink } from '@backstage/catalog-model';
 import { UserRow } from './schema';
-import { emailToUserName, pickDefined } from './refs';
+import { emailLocalPart, pickDefined } from './refs';
 
 /** Backstage namespace for canonical org users sourced from BigQuery. */
 export const PEOPLE_NAMESPACE = 'people';
@@ -92,7 +92,7 @@ function userLinks(email: string, githubLogin?: string | null): EntityLink[] {
  * Pure transform: one BigQuery UserRow → one Backstage `User` entity in the
  * `people` namespace.
  *
- * - Name is `emailToUserName(email)` for stable cross-provider refs.
+ * - Name is `emailLocalPart(email)` for stable cross-provider refs.
  * - `displayName` comes from the BigQuery `name` field when present; falls
  *   back to the email local-part.
  * - `picture` is always a Gravatar URL derived from the email.
@@ -123,7 +123,7 @@ export function personToEntity(user: UserRow, locationRef: string): Entity {
     apiVersion: 'backstage.io/v1alpha1',
     kind: 'User',
     metadata: {
-      name: emailToUserName(user.email),
+      name: emailLocalPart(user.email),
       namespace: PEOPLE_NAMESPACE,
       annotations,
       ...(links.length > 0 ? { links } : {}),

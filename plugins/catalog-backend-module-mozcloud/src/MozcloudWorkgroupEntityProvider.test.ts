@@ -65,8 +65,8 @@ describe('buildGroupMembers', () => {
   it('maps subgroup membership to sorted people-namespace refs', () => {
     const map = buildGroupMembers(USERS);
     expect(map.get('group:workgroups/backstage-admins')).toEqual([
-      'user:people/alice-mozilla-com',
-      'user:people/bob-mozilla-com',
+      'user:people/alice',
+      'user:people/bob',
     ]);
   });
 });
@@ -95,8 +95,8 @@ describe('MozcloudWorkgroupEntityProvider', () => {
       e => e.kind === 'Group' && e.metadata.name === 'backstage-admins',
     )!;
     expect((admins.spec as { members?: string[] }).members).toEqual([
-      'user:people/alice-mozilla-com',
-      'user:people/bob-mozilla-com',
+      'user:people/alice',
+      'user:people/bob',
     ]);
   });
 });
