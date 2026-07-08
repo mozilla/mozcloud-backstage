@@ -11,25 +11,47 @@ import type {
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
 import { devToolsPermissions } from '@backstage/plugin-devtools-common';
+import {
+  devToolsTaskSchedulerCreatePermission,
+  devToolsTaskSchedulerReadPermission,
+} from '@backstage/plugin-devtools-common/alpha';
 
 /**
  * Members of this workgroup subgroup (owner term: the `cloud-engineering/admin`
  * team) are the only principals allowed to use the DevTools plugin.
  */
-export const DEVTOOLS_ADMIN_GROUP = 'group:workgroups/cloud-engineering-admin';
+export const DEVTOOLS_ADMIN_GROUP =
+  'group:workgroups/rapid-release-model-admins';
+
+/**
+ * The DevTools permissions gated to admins: the stable set
+ * (`devToolsPermissions` — info/config/external-dependencies/administer) plus
+ * the alpha Scheduled Tasks permissions (read + trigger/cancel). The scheduler
+ * permissions are not part of the stable aggregate, so they are added
+ * explicitly; otherwise they would fall through to the allow-all branch and be
+ * granted to every authenticated user. This gates the frontend
+ * `RequirePermission` checks around the Scheduled Tasks page — note the core
+ * `.backstage/scheduler/v1/tasks` endpoints are not permission-integrated in
+ * the pinned versions, so this is frontend/defense-in-depth, not a hard lock
+ * on those endpoints.
+ */
+const GATED_DEVTOOLS_PERMISSIONS = [
+  ...devToolsPermissions,
+  devToolsTaskSchedulerReadPermission,
+  devToolsTaskSchedulerCreatePermission,
+];
 
 /**
  * Allows every permission (preserving the previous allow-all behavior) except
- * DevTools permissions (all permissions exported from
- * `@backstage/plugin-devtools-common` via `devToolsPermissions`), which
- * require membership of {@link DEVTOOLS_ADMIN_GROUP}.
+ * the DevTools permissions in {@link GATED_DEVTOOLS_PERMISSIONS}, which require
+ * membership of {@link DEVTOOLS_ADMIN_GROUP}.
  */
 export class DevToolsAdminPermissionPolicy implements PermissionPolicy {
   async handle(
     request: PolicyQuery,
     user?: PolicyQueryUser,
   ): Promise<PolicyDecision> {
-    const isDevToolsRequest = devToolsPermissions.some(permission =>
+    const isDevToolsRequest = GATED_DEVTOOLS_PERMISSIONS.some(permission =>
       isPermission(request.permission, permission),
     );
 
