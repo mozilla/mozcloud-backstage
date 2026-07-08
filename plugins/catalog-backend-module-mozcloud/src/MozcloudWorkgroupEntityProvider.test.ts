@@ -99,4 +99,49 @@ describe('MozcloudWorkgroupEntityProvider', () => {
       'user:people/bob',
     ]);
   });
+
+  it('merges gcp members (from workgroupToEntities) with people members (from the users source) rather than overwriting', async () => {
+    const wgWithGcpMember: WorkgroupRow = {
+      workgroup: 'backstage',
+      sponsor: 'boss@mozilla.com',
+      managers: [],
+      tickets: [],
+      subgroups: [
+        {
+          parent: 'backstage',
+          name: 'admins',
+          members: ['carol@firefox.gcp.mozilla.com'],
+          managers: [],
+          google_groups: [],
+          workgroups: [],
+          service_accounts: [],
+        },
+      ],
+    };
+    const captured: EntityProviderMutation[] = [];
+    const connection: EntityProviderConnection = {
+      applyMutation: async m => {
+        captured.push(m);
+      },
+      refresh: async () => {},
+    };
+    const provider = new MozcloudWorkgroupEntityProvider(
+      new FakeSource<WorkgroupRow>('wg:test', [wgWithGcpMember]),
+      new FakeSource<UserRow>('users:test', USERS),
+      mockServices.logger.mock(),
+      new ImmediateTaskRunner(),
+    );
+    await provider.connect(connection);
+
+    if (captured[0].type !== 'full') throw new Error('unreachable');
+    const entities = captured[0].entities.map(e => e.entity);
+    const admins = entities.find(
+      e => e.kind === 'Group' && e.metadata.name === 'backstage-admins',
+    )!;
+    expect((admins.spec as { members?: string[] }).members).toEqual([
+      'user:gcp/carol',
+      'user:people/alice',
+      'user:people/bob',
+    ]);
+  });
 });

@@ -178,18 +178,25 @@ describe('workgroupToEntities', () => {
     });
   });
 
-  describe('user entities are not emitted', () => {
-    // Human users come from the separate `userToEntities` transform fed
-    // by the users source. The workgroup transform deals only in Groups.
+  describe('people users are not emitted; gcp users are', () => {
+    // Human `mozilla.org`-domain users come from the separate
+    // `userToEntities` transform fed by the users source. The workgroup
+    // transform only emits `user:gcp/…` entities, for
+    // `@firefox.gcp.mozilla.com` IAM identities found in subgroup members.
     const wg = loadFixture('fxa');
     const entities = workgroupToEntities(wg, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
-    it('emits zero User entities even when the fixture lists member emails', () => {
-      expect(byKind('User')).toHaveLength(0);
+    it('emits user:gcp entities only for @firefox.gcp.mozilla.com members', () => {
+      const gcpUsers = byKind('User');
+      expect(gcpUsers.map(u => u.metadata.name).sort()).toEqual([
+        'bkochendorfer',
+        'dkirchner',
+      ]);
+      expect(gcpUsers.every(u => u.metadata.namespace === 'gcp')).toBe(true);
     });
 
-    it('leaves subgroup spec.members empty (provider fills it from the users source)', () => {
+    it('leaves subgroup spec.members empty when it has no gcp members (provider fills it from the users source)', () => {
       const developers = byKind('Group').find(
         g => g.metadata.name === 'fxa-developers',
       )!;
@@ -198,10 +205,52 @@ describe('workgroupToEntities', () => {
       );
     });
 
+    it('links a subgroup with gcp members to their user:gcp refs', () => {
+      const viewers = byKind('Group').find(
+        g => g.metadata.name === 'fxa-viewers',
+      )!;
+      expect((viewers.spec as { members?: string[] }).members).toEqual([
+        'user:gcp/bkochendorfer',
+        'user:gcp/dkirchner',
+      ]);
+    });
+
     it('parent workgroup has no direct members of its own', () => {
       const parent = byKind('Group').find(g => g.metadata.name === 'fxa')!;
       expect((parent.spec as { members?: string[] }).members ?? []).toEqual([]);
     });
+  });
+});
+
+describe('gcp identity members', () => {
+  it('emits user:gcp entities for @firefox.gcp.mozilla.com members and links them', () => {
+    const wg = {
+      workgroup: 'cloud-engineering',
+      sponsor: 's@mozilla.com',
+      tickets: [],
+      managers: [],
+      subgroups: [
+        {
+          parent: 'cloud-engineering',
+          name: 'admins',
+          members: [
+            'wstuckey@firefox.gcp.mozilla.com',
+            'sa@project.iam.gserviceaccount.com',
+          ],
+        },
+      ],
+    } as any;
+    const out = workgroupToEntities(wg, 'loc');
+    const gcpUser = out.find(
+      e => e.kind === 'User' && e.metadata.namespace === 'gcp',
+    );
+    expect(gcpUser?.metadata.name).toBe('wstuckey');
+    const sub = out.find(
+      e => e.kind === 'Group' && e.metadata.name === 'cloud-engineering-admins',
+    );
+    expect((sub!.spec as any).members).toContain('user:gcp/wstuckey');
+    // service-account IAM principals are NOT turned into gcp users
+    expect(out.some(e => e.metadata.name === 'sa')).toBe(false);
   });
 });
 

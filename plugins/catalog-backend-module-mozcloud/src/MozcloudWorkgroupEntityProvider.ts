@@ -42,9 +42,13 @@ const DEFAULT_SCHEDULE = {
  *    `workgroups` namespace so they don't collide with the GitHub Org
  *    provider's Groups in `default`.
  *  - `users` source — one row per human user, with the `(workgroup,
- *    subgroup)` memberships they hold. Used only to back-fill each
- *    subgroup's `spec.members` with `user:people/<name>` refs.
- *    User entities themselves are emitted by MozcloudPeopleEntityProvider.
+ *    subgroup)` memberships they hold. Used to back-fill each subgroup's
+ *    `spec.members` with `user:people/<name>` refs, merged with the
+ *    `user:gcp/<localpart>` refs `workgroupToEntities` already put there
+ *    for `@firefox.gcp.mozilla.com` IAM identities.
+ *    People `User` entities themselves are emitted by
+ *    MozcloudPeopleEntityProvider; gcp `User` entities are emitted by
+ *    `workgroupToEntities` directly.
  */
 export class MozcloudWorkgroupEntityProvider implements EntityProvider {
   private connection?: EntityProviderConnection;
@@ -103,8 +107,10 @@ export class MozcloudWorkgroupEntityProvider implements EntityProvider {
     const groupMembers = buildGroupMembers(users);
     for (const e of deduped) {
       if (e.kind !== 'Group') continue;
-      const members = groupMembers.get(entityRef(e));
-      if (members) (e.spec as { members?: string[] }).members = members;
+      const spec = e.spec as { members?: string[] };
+      const fromUsers = groupMembers.get(entityRef(e)) ?? [];
+      const existing = spec.members ?? [];
+      spec.members = Array.from(new Set([...existing, ...fromUsers])).sort();
     }
 
     await this.connection.applyMutation({
