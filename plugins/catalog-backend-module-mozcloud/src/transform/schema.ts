@@ -84,14 +84,18 @@ export type TenantRow = z.infer<typeof TenantRowSchema>;
  * One subgroup as it appears on the workgroups source. Note that
  * `members` here is **not** a list of user emails — it's the IAM-principal
  * binding list (`group:…@firefox.gcp.mozilla.com`, `serviceAccount:…`,
- * etc.) that GCP grants access through. Human members live in the
- * separate users source ({@link UserRowSchema}).
+ * etc.) that GCP grants access through. `users` is the individual human
+ * members of the subgroup, as gcp-domain emails
+ * (`<localpart>@firefox.gcp.mozilla.com`) — this is the source for
+ * `user:gcp/…` entities. (The separate `mozilla.org` users source,
+ * {@link UserRowSchema}, backs `user:people/…` entities instead.)
  */
 const SubgroupSchema = z
   .object({
     parent: z.string(),
     name: z.string(),
     members: z.array(z.string()).default([]),
+    users: z.array(z.string()).default([]),
     managers: z.array(z.string()).default([]),
     google_groups: z.array(z.string()).default([]),
     workgroups: z.array(z.string()).default([]),

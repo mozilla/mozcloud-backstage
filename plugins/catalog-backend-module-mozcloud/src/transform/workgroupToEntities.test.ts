@@ -182,18 +182,30 @@ describe('workgroupToEntities', () => {
     // Human `mozilla.org`-domain users come from the separate
     // `userToEntities` transform fed by the users source. The workgroup
     // transform only emits `user:gcp/…` entities, for
-    // `@firefox.gcp.mozilla.com` IAM identities found in subgroup members.
+    // `@firefox.gcp.mozilla.com` IAM identities found in subgroup `users`
+    // (the individual-human-member field; `members` is the IAM-principal
+    // binding list).
     const wg = loadFixture('fxa');
     const entities = workgroupToEntities(wg, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
-    it('emits user:gcp entities only for @firefox.gcp.mozilla.com members', () => {
+    it('emits user:gcp entities only for @firefox.gcp.mozilla.com users', () => {
       const gcpUsers = byKind('User');
       expect(gcpUsers.map(u => u.metadata.name).sort()).toEqual([
         'bkochendorfer',
         'dkirchner',
       ]);
       expect(gcpUsers.every(u => u.metadata.namespace === 'gcp')).toBe(true);
+    });
+
+    it('excludes gcp human users from the mozilla.org/iam-principals annotation (that annotation reflects members, not users)', () => {
+      const viewers = byKind('Group').find(
+        g => g.metadata.name === 'fxa-viewers',
+      )!;
+      const iamPrincipals =
+        viewers.metadata.annotations?.['mozilla.org/iam-principals'] ?? '';
+      expect(iamPrincipals).not.toContain('bkochendorfer');
+      expect(iamPrincipals).not.toContain('dkirchner');
     });
 
     it('leaves subgroup spec.members empty when it has no gcp members (provider fills it from the users source)', () => {
@@ -223,7 +235,7 @@ describe('workgroupToEntities', () => {
 });
 
 describe('gcp identity members', () => {
-  it('emits user:gcp entities for @firefox.gcp.mozilla.com members and links them', () => {
+  it('emits user:gcp entities for @firefox.gcp.mozilla.com users and links them', () => {
     const wg = {
       workgroup: 'cloud-engineering',
       sponsor: 's@mozilla.com',
@@ -233,7 +245,12 @@ describe('gcp identity members', () => {
         {
           parent: 'cloud-engineering',
           name: 'admins',
+          // IAM-principal binding list — not the source of gcp users.
           members: [
+            'group:gcp-wg-cloud-engineering--admins@firefox.gcp.mozilla.com',
+          ],
+          // Individual human members.
+          users: [
             'wstuckey@firefox.gcp.mozilla.com',
             'sa@project.iam.gserviceaccount.com',
           ],
@@ -249,11 +266,12 @@ describe('gcp identity members', () => {
       e => e.kind === 'Group' && e.metadata.name === 'cloud-engineering-admins',
     );
     expect((sub!.spec as any).members).toContain('user:gcp/wstuckey');
-    // service-account IAM principals are NOT turned into gcp users
+    // a non-@firefox.gcp.mozilla.com value in `users` is NOT turned into a
+    // gcp user (defensive filter still applies to the users source)
     expect(out.some(e => e.metadata.name === 'sa')).toBe(false);
   });
 
-  it('ignores type-prefixed IAM principals (group:/serviceAccount:) at the gcp domain', () => {
+  it('ignores type-prefixed IAM principals (group:/serviceAccount:) found at the gcp domain in `users`', () => {
     const wg = {
       workgroup: 'mofo-data',
       sponsor: 's@mozilla.com',
@@ -263,11 +281,14 @@ describe('gcp identity members', () => {
         {
           parent: 'mofo-data',
           name: 'viewers',
-          members: [
+          members: ['group:gcp-wg-mofo-data--viewers@firefox.gcp.mozilla.com'],
+          users: [
             'realuser@firefox.gcp.mozilla.com',
-            // A Google Group principal that also lives at the gcp domain — its
-            // local-part contains a ':' and must NOT become a user:gcp entity
-            // (would be an invalid metadata.name and fail catalog ingestion).
+            // Defensive case: a Google Group principal that also lives at
+            // the gcp domain shouldn't normally end up in `users`, but if
+            // it did, its local-part contains a ':' and must NOT become a
+            // user:gcp entity (would be an invalid metadata.name and fail
+            // catalog ingestion).
             'group:gcp-wg-mofo-data--viewers@firefox.gcp.mozilla.com',
           ],
         },

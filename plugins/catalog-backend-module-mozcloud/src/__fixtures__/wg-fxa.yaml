@@ -29,10 +29,13 @@ subgroups:
   - name: viewers
     members:
       - akomarzewski@mozilla.com
-      - bkochendorfer@firefox.gcp.mozilla.com
-      - dkirchner@firefox.gcp.mozilla.com
       - gkaberere@mozilla.com
       - kanderson@mozilla.com
       - kignasiak@mozilla.com
       - rotto@mozilla.com
       - ykhurana@mozilla.com
+    # `users` is the individual-human-member field (gcp domain accounts);
+    # `members` above is the IAM-principal binding list.
+    users:
+      - bkochendorfer@firefox.gcp.mozilla.com
+      - dkirchner@firefox.gcp.mozilla.com

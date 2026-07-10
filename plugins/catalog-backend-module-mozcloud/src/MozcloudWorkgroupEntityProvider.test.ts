@@ -39,6 +39,7 @@ const WG: WorkgroupRow = {
       parent: 'backstage',
       name: 'admins',
       members: [],
+      users: [],
       managers: [],
       google_groups: [],
       workgroups: [],
@@ -110,7 +111,8 @@ describe('MozcloudWorkgroupEntityProvider', () => {
         {
           parent: 'backstage',
           name: 'admins',
-          members: ['carol@firefox.gcp.mozilla.com'],
+          members: [],
+          users: ['carol@firefox.gcp.mozilla.com'],
           managers: [],
           google_groups: [],
           workgroups: [],

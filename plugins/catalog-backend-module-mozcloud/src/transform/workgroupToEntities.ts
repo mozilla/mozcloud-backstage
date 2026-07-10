@@ -15,18 +15,21 @@ const GCP_DOMAIN = '@firefox.gcp.mozilla.com';
 
 /**
  * A bare human IAM identity at the gcp domain: `<localpart>@firefox.gcp.mozilla.com`
- * where the local-part is a valid Backstage entity name. `sub.members` also
- * holds type-prefixed principals — Google groups (`group:…@firefox.gcp.mozilla.com`)
- * and service accounts (`serviceAccount:…`) — which must NOT become `user:gcp`
- * entities: their `:`-containing local-part is an invalid `metadata.name` and
- * fails catalog ingestion. The local-part charset mirrors {@link emailLocalPart}
- * so a matched value always yields a valid entity name.
+ * where the local-part is a valid Backstage entity name. `sub.users` is
+ * expected to hold only such bare human identities, but defensively we
+ * still filter out anything else that might show up there — e.g.
+ * type-prefixed principals like Google groups
+ * (`group:…@firefox.gcp.mozilla.com`) or service accounts
+ * (`serviceAccount:…`), whose `:`-containing local-part is an invalid
+ * `metadata.name` and would fail catalog ingestion. The local-part charset
+ * mirrors {@link emailLocalPart} so a matched value always yields a valid
+ * entity name.
  */
 const GCP_USER_MEMBER = /^[a-z0-9._-]+@firefox\.gcp\.mozilla\.com$/i;
 
-/** Local-parts of a subgroup's bare `@firefox.gcp.mozilla.com` user members. */
+/** Local-parts of a subgroup's bare `@firefox.gcp.mozilla.com` human users. */
 function gcpMemberLocalParts(sub: Subgroup): string[] {
-  return (sub.members ?? [])
+  return (sub.users ?? [])
     .filter(m => GCP_USER_MEMBER.test(m))
     .map(emailLocalPart);
 }
@@ -82,13 +85,14 @@ function workgroupLinks(workgroup: string, subgroup?: string): EntityLink[] {
  * Emits, for each workgroup:
  *   - 1 parent Group         (group:workgroups/<workgroup>)
  *   - N subgroup Groups      (group:workgroups/<workgroup>-<subname>)
- *   - 1 `user:gcp/<localpart>` User per `@firefox.gcp.mozilla.com` IAM
- *     identity found in a subgroup's `members` list.
+ *   - 1 `user:gcp/<localpart>` User per `@firefox.gcp.mozilla.com` human
+ *     identity found in a subgroup's `users` list.
  *
  * People `User` entities are NOT emitted here — MozcloudPeopleEntityProvider
  * owns those (in the `people` namespace), and the workgroup provider fills
  * each subgroup's `spec.members` with `user:people/…` refs built from the
- * users source, merged with the `user:gcp/…` refs emitted below.
+ * dedicated (`mozilla.org`-domain) users source, merged with the
+ * `user:gcp/…` refs emitted below.
  */
 export function workgroupToEntities(
   wg: WorkgroupRow,
@@ -136,8 +140,8 @@ export function workgroupToEntities(
     entities.push(subgroupToEntity(sub, locationRef));
   }
 
-  // Emit user:gcp entities for gcp IAM human identities found in any
-  // subgroup's members. Deduping is unnecessary here — the provider
+  // Emit user:gcp entities for gcp-domain human identities found in any
+  // subgroup's users. Deduping is unnecessary here — the provider
   // dedupes globally across all workgroups.
   for (const sub of wg.subgroups) {
     for (const lp of gcpMemberLocalParts(sub)) {
@@ -191,9 +195,9 @@ function subgroupToEntity(sub: Subgroup, locationRef: string): Entity {
       profile: { displayName: `${sub.parent} / ${sub.name}` },
       parent: `workgroups/${sub.parent}`,
       children: (sub.workgroups ?? []).map(workgroupRef),
-      // `spec.members` starts with this subgroup's own gcp IAM identity
-      // members; the provider merges in `user:people/…` refs from the
-      // users source on top of these.
+      // `spec.members` starts with this subgroup's own gcp human identity
+      // members (from `sub.users`); the provider merges in `user:people/…`
+      // refs from the dedicated users source on top of these.
       members: gcpMemberLocalParts(sub).map(lp => `user:gcp/${lp}`),
     },
   };
