@@ -66,12 +66,24 @@ export function emailToUserName(email: string): string {
 }
 
 /**
- * The email local-part, lowercased — the stable People entity name. Matches how
- * `emailLocalPartMatchingUserEntityName` derives the name at sign-in
- * (`email.split('@')[0]`), so login resolves to `user:people/<localPart>`.
+ * The email local-part as a valid Backstage entity name. Lowercased and, for
+ * the common case (alphanumerics + dots, e.g. `first.last`), returned verbatim
+ * so it matches how `emailLocalPartMatchingUserEntityName` derives the name at
+ * sign-in (`email.split('@')[0]`) and login resolves to `user:people/<localPart>`.
+ *
+ * Characters not allowed in a `metadata.name` (e.g. `+` in plus-addressed
+ * aliases like `tkorris+bugzilla@mozilla.com`) are replaced with `-`, with
+ * separator runs collapsed and edges trimmed, so the result is always a valid
+ * name. Such addresses aren't real login identities, so the rewrite doesn't
+ * affect sign-in resolution for normal users.
  */
 export function emailLocalPart(email: string): string {
-  return email.split('@')[0].toLowerCase();
+  return email
+    .split('@')[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, '-') // invalid chars -> '-'
+    .replace(/[-_.]{2,}/g, '-') // collapse consecutive separators
+    .replace(/^[-_.]+|[-_.]+$/g, ''); // trim leading/trailing separators
 }
 
 /**
