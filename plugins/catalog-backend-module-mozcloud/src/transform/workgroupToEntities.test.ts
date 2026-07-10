@@ -269,6 +269,11 @@ describe('gcp identity members', () => {
     // a non-@firefox.gcp.mozilla.com value in `users` is NOT turned into a
     // gcp user (defensive filter still applies to the users source)
     expect(out.some(e => e.metadata.name === 'sa')).toBe(false);
+    // the IAM binding stays in the annotation, sourced from `members` (not
+    // `users`) — gcp users and the binding coexist on the same subgroup
+    expect(sub!.metadata.annotations?.['mozilla.org/iam-principals']).toBe(
+      'group:gcp-wg-cloud-engineering--admins@firefox.gcp.mozilla.com',
+    );
   });
 
   it('ignores type-prefixed IAM principals (group:/serviceAccount:) found at the gcp domain in `users`', () => {
