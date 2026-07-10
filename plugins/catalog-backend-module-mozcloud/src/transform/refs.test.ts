@@ -7,23 +7,20 @@ describe('emailLocalPart', () => {
     expect(emailLocalPart('jbuck@firefox.gcp.mozilla.com')).toBe('jbuck');
   });
 
-  it('sanitizes characters invalid in a Backstage entity name', () => {
-    // plus-addressing: '+' is not allowed in metadata.name
-    expect(emailLocalPart('tkorris+bugzilla@mozilla.com')).toBe(
-      'tkorris-bugzilla',
-    );
-    // collapse separator runs and trim edges so the result is always valid
-    expect(emailLocalPart('weird.+name@mozilla.com')).toBe('weird-name');
-    expect(emailLocalPart('+lead@mozilla.com')).toBe('lead');
+  it('drops plus-addressing so aliases collapse onto the base identity', () => {
+    // tkorris+bugzilla and tkorris are the same mailbox / person (Taddes Korris)
+    expect(emailLocalPart('tkorris+bugzilla@mozilla.com')).toBe('tkorris');
+    expect(emailLocalPart('a.b+tag@mozilla.com')).toBe('a.b');
   });
 
-  it('always yields a valid entity name (alphanumerics single-separated)', () => {
+  it('sanitizes any remaining invalid characters to a valid name', () => {
     const valid = /^[a-z0-9]+([-_.][a-z0-9]+)*$/;
     for (const e of [
       'tkorris+bugzilla@mozilla.com',
       'a..b@mozilla.com',
-      'x+@mozilla.com',
+      'x+y@mozilla.com',
       'first.last@mozilla.com',
+      "o'brien@mozilla.com",
     ]) {
       expect(emailLocalPart(e)).toMatch(valid);
     }

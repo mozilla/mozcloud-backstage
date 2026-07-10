@@ -81,7 +81,8 @@ export function emailLocalPart(email: string): string {
   return email
     .split('@')[0]
     .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, '-') // invalid chars -> '-'
+    .replace(/\+.*$/, '') // drop plus-addressed subaddress (same mailbox/person)
+    .replace(/[^a-z0-9_.-]+/g, '-') // any remaining invalid chars -> '-'
     .replace(/[-_.]{2,}/g, '-') // collapse consecutive separators
     .replace(/^[-_.]+|[-_.]+$/g, ''); // trim leading/trailing separators
 }
