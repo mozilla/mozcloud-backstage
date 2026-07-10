@@ -11,11 +11,13 @@ const DEFAULT_WORKGROUPS_TABLE = 'workgroups';
  * Reads the pre-aggregated `<dataset>.<workgroupsTable>` view directly:
  * each row is one workgroup with a nested `subgroups` ARRAY<RECORD>.
  *
- * The `users` field on each subgroup (the canonical list of human members)
- * is intentionally dropped here — it belongs to the dedicated users source
- * ({@link usersQuery}). What remains in `subgroups.members` is the IAM-
- * principal binding list (`group:…` and `serviceAccount:…` refs) used to
- * grant access at the cloud-platform layer.
+ * `subgroups.members` is the IAM-principal binding list (`group:…` and
+ * `serviceAccount:…` refs) used to grant access at the cloud-platform
+ * layer; it backs the `mozilla.org/iam-principals` annotation.
+ * `subgroups.users` is the canonical list of individual human members
+ * (gcp-domain emails) and is the source for `user:gcp/…` entities. (The
+ * separate dedicated users source, {@link usersQuery}, is unrelated — it
+ * backs `user:people/…` entities from `mozilla.org`-domain identities.)
  */
 export function workgroupsQuery(cfg: WorkgroupsQueryConfig): string {
   const workgroupsTable = cfg.workgroupsTable ?? DEFAULT_WORKGROUPS_TABLE;
@@ -33,6 +35,7 @@ export function workgroupsQuery(cfg: WorkgroupsQueryConfig): string {
           sg.name,
           sg.managers,
           sg.members,
+          sg.users,
           sg.google_groups,
           sg.workgroups,
           sg.service_accounts

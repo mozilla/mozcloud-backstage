@@ -43,10 +43,17 @@ export function usersQuery(cfg: UsersQueryConfig): string {
   // `name` is read from the Workday person directory, so the executing
   // BigQuery identity must have read access to `personDirectoryTable`.
   return `
-    WITH agg AS (
+    WITH people AS (
+      -- Canonical identity: lowercased with any plus-addressed subaddress
+      -- removed, so aliases like alice+bugzilla@ collapse onto alice@ (the same
+      -- mailbox / person) rather than emitting a second, dirty user row.
+      SELECT REGEXP_REPLACE(LOWER(email), r'\\+[^@]*', '') AS email, name
+      FROM ${personTable}
+    ),
+    agg AS (
       SELECT
         p.email AS email,
-        p.name AS name,
+        ANY_VALUE(p.name) AS name,
         MAX(m.github_login) AS github_login,
         MAX(m.github_node_id) AS github_node_id,
         ARRAY_CONCAT_AGG(m.github_orgs) AS github_orgs_concat,
@@ -59,10 +66,10 @@ export function usersQuery(cfg: UsersQueryConfig): string {
           IGNORE NULLS
           ORDER BY m.workgroup, m.subgroup
         ) AS memberships
-      FROM ${personTable} p
+      FROM people p
       LEFT JOIN ${membershipTable} m
-        ON LOWER(p.email) = LOWER(m.value) AND m.member_type = 'user'
-      GROUP BY p.email, p.name
+        ON p.email = LOWER(m.value) AND m.member_type = 'user'
+      GROUP BY p.email
     )
     SELECT
       email,

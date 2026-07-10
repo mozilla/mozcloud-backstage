@@ -1,6 +1,6 @@
 import { personToEntity, allStaffGroupEntity } from './personToEntity';
 import { UserRowSchema } from './schema';
-import { emailToUserName } from './refs';
+import { emailLocalPart } from './refs';
 
 const LOCATION = 'mozcloud-people:fake';
 
@@ -18,7 +18,7 @@ describe('personToEntity', () => {
     const e = personToEntity(fullUser, LOCATION);
     expect(e.kind).toBe('User');
     expect(e.metadata.namespace).toBe('people');
-    expect(e.metadata.name).toBe(emailToUserName('alice@mozilla.com'));
+    expect(e.metadata.name).toBe(emailLocalPart('alice@mozilla.com'));
   });
 
   it('uses name as displayName when name is non-empty', () => {

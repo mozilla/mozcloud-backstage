@@ -178,18 +178,37 @@ describe('workgroupToEntities', () => {
     });
   });
 
-  describe('user entities are not emitted', () => {
-    // Human users come from the separate `userToEntities` transform fed
-    // by the users source. The workgroup transform deals only in Groups.
+  describe('people users are not emitted; gcp users are', () => {
+    // Human `mozilla.org`-domain users come from the separate
+    // `userToEntities` transform fed by the users source. The workgroup
+    // transform only emits `user:gcp/…` entities, for
+    // `@firefox.gcp.mozilla.com` IAM identities found in subgroup `users`
+    // (the individual-human-member field; `members` is the IAM-principal
+    // binding list).
     const wg = loadFixture('fxa');
     const entities = workgroupToEntities(wg, FIXTURE_LOCATION);
     const byKind = (kind: string) => entities.filter(e => e.kind === kind);
 
-    it('emits zero User entities even when the fixture lists member emails', () => {
-      expect(byKind('User')).toHaveLength(0);
+    it('emits user:gcp entities only for @firefox.gcp.mozilla.com users', () => {
+      const gcpUsers = byKind('User');
+      expect(gcpUsers.map(u => u.metadata.name).sort()).toEqual([
+        'bkochendorfer',
+        'dkirchner',
+      ]);
+      expect(gcpUsers.every(u => u.metadata.namespace === 'gcp')).toBe(true);
     });
 
-    it('leaves subgroup spec.members empty (provider fills it from the users source)', () => {
+    it('excludes gcp human users from the mozilla.org/iam-principals annotation (that annotation reflects members, not users)', () => {
+      const viewers = byKind('Group').find(
+        g => g.metadata.name === 'fxa-viewers',
+      )!;
+      const iamPrincipals =
+        viewers.metadata.annotations?.['mozilla.org/iam-principals'] ?? '';
+      expect(iamPrincipals).not.toContain('bkochendorfer');
+      expect(iamPrincipals).not.toContain('dkirchner');
+    });
+
+    it('leaves subgroup spec.members empty when it has no gcp members (provider fills it from the users source)', () => {
       const developers = byKind('Group').find(
         g => g.metadata.name === 'fxa-developers',
       )!;
@@ -198,10 +217,100 @@ describe('workgroupToEntities', () => {
       );
     });
 
+    it('links a subgroup with gcp members to their user:gcp refs', () => {
+      const viewers = byKind('Group').find(
+        g => g.metadata.name === 'fxa-viewers',
+      )!;
+      expect((viewers.spec as { members?: string[] }).members).toEqual([
+        'user:gcp/bkochendorfer',
+        'user:gcp/dkirchner',
+      ]);
+    });
+
     it('parent workgroup has no direct members of its own', () => {
       const parent = byKind('Group').find(g => g.metadata.name === 'fxa')!;
       expect((parent.spec as { members?: string[] }).members ?? []).toEqual([]);
     });
+  });
+});
+
+describe('gcp identity members', () => {
+  it('emits user:gcp entities for @firefox.gcp.mozilla.com users and links them', () => {
+    const wg = {
+      workgroup: 'cloud-engineering',
+      sponsor: 's@mozilla.com',
+      tickets: [],
+      managers: [],
+      subgroups: [
+        {
+          parent: 'cloud-engineering',
+          name: 'admins',
+          // IAM-principal binding list — not the source of gcp users.
+          members: [
+            'group:gcp-wg-cloud-engineering--admins@firefox.gcp.mozilla.com',
+          ],
+          // Individual human members.
+          users: [
+            'wstuckey@firefox.gcp.mozilla.com',
+            'sa@project.iam.gserviceaccount.com',
+          ],
+        },
+      ],
+    } as any;
+    const out = workgroupToEntities(wg, 'loc');
+    const gcpUser = out.find(
+      e => e.kind === 'User' && e.metadata.namespace === 'gcp',
+    );
+    expect(gcpUser?.metadata.name).toBe('wstuckey');
+    const sub = out.find(
+      e => e.kind === 'Group' && e.metadata.name === 'cloud-engineering-admins',
+    );
+    expect((sub!.spec as any).members).toContain('user:gcp/wstuckey');
+    // a non-@firefox.gcp.mozilla.com value in `users` is NOT turned into a
+    // gcp user (defensive filter still applies to the users source)
+    expect(out.some(e => e.metadata.name === 'sa')).toBe(false);
+    // the IAM binding stays in the annotation, sourced from `members` (not
+    // `users`) — gcp users and the binding coexist on the same subgroup
+    expect(sub!.metadata.annotations?.['mozilla.org/iam-principals']).toBe(
+      'group:gcp-wg-cloud-engineering--admins@firefox.gcp.mozilla.com',
+    );
+  });
+
+  it('ignores type-prefixed IAM principals (group:/serviceAccount:) found at the gcp domain in `users`', () => {
+    const wg = {
+      workgroup: 'mofo-data',
+      sponsor: 's@mozilla.com',
+      tickets: [],
+      managers: [],
+      subgroups: [
+        {
+          parent: 'mofo-data',
+          name: 'viewers',
+          members: ['group:gcp-wg-mofo-data--viewers@firefox.gcp.mozilla.com'],
+          users: [
+            'realuser@firefox.gcp.mozilla.com',
+            // Defensive case: a Google Group principal that also lives at
+            // the gcp domain shouldn't normally end up in `users`, but if
+            // it did, its local-part contains a ':' and must NOT become a
+            // user:gcp entity (would be an invalid metadata.name and fail
+            // catalog ingestion).
+            'group:gcp-wg-mofo-data--viewers@firefox.gcp.mozilla.com',
+          ],
+        },
+      ],
+    } as any;
+    const out = workgroupToEntities(wg, 'loc');
+    const gcpUsers = out.filter(
+      e => e.kind === 'User' && e.metadata.namespace === 'gcp',
+    );
+    // only the bare user email becomes a gcp user
+    expect(gcpUsers.map(u => u.metadata.name)).toEqual(['realuser']);
+    // no entity name ever contains a ':'
+    expect(out.every(e => !e.metadata.name.includes(':'))).toBe(true);
+    const sub = out.find(
+      e => e.kind === 'Group' && e.metadata.name === 'mofo-data-viewers',
+    );
+    expect((sub!.spec as any).members).toEqual(['user:gcp/realuser']);
   });
 });
 
