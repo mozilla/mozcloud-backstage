@@ -252,6 +252,40 @@ describe('gcp identity members', () => {
     // service-account IAM principals are NOT turned into gcp users
     expect(out.some(e => e.metadata.name === 'sa')).toBe(false);
   });
+
+  it('ignores type-prefixed IAM principals (group:/serviceAccount:) at the gcp domain', () => {
+    const wg = {
+      workgroup: 'mofo-data',
+      sponsor: 's@mozilla.com',
+      tickets: [],
+      managers: [],
+      subgroups: [
+        {
+          parent: 'mofo-data',
+          name: 'viewers',
+          members: [
+            'realuser@firefox.gcp.mozilla.com',
+            // A Google Group principal that also lives at the gcp domain — its
+            // local-part contains a ':' and must NOT become a user:gcp entity
+            // (would be an invalid metadata.name and fail catalog ingestion).
+            'group:gcp-wg-mofo-data--viewers@firefox.gcp.mozilla.com',
+          ],
+        },
+      ],
+    } as any;
+    const out = workgroupToEntities(wg, 'loc');
+    const gcpUsers = out.filter(
+      e => e.kind === 'User' && e.metadata.namespace === 'gcp',
+    );
+    // only the bare user email becomes a gcp user
+    expect(gcpUsers.map(u => u.metadata.name)).toEqual(['realuser']);
+    // no entity name ever contains a ':'
+    expect(out.every(e => !e.metadata.name.includes(':'))).toBe(true);
+    const sub = out.find(
+      e => e.kind === 'Group' && e.metadata.name === 'mofo-data-viewers',
+    );
+    expect((sub!.spec as any).members).toEqual(['user:gcp/realuser']);
+  });
 });
 
 describe('email + ref helpers', () => {

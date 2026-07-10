@@ -13,10 +13,21 @@ const WORKGROUPS_PATH = 'google-workspace-management/tf/workgroups';
 const DAWG_BASE = 'https://protosaur.dev/dawg/workgroup';
 const GCP_DOMAIN = '@firefox.gcp.mozilla.com';
 
-/** Local-parts of a subgroup's `@firefox.gcp.mozilla.com` user members. */
+/**
+ * A bare human IAM identity at the gcp domain: `<localpart>@firefox.gcp.mozilla.com`
+ * where the local-part is a valid Backstage entity name. `sub.members` also
+ * holds type-prefixed principals — Google groups (`group:…@firefox.gcp.mozilla.com`)
+ * and service accounts (`serviceAccount:…`) — which must NOT become `user:gcp`
+ * entities: their `:`-containing local-part is an invalid `metadata.name` and
+ * fails catalog ingestion. The local-part charset mirrors {@link emailLocalPart}
+ * so a matched value always yields a valid entity name.
+ */
+const GCP_USER_MEMBER = /^[a-z0-9._-]+@firefox\.gcp\.mozilla\.com$/i;
+
+/** Local-parts of a subgroup's bare `@firefox.gcp.mozilla.com` user members. */
 function gcpMemberLocalParts(sub: Subgroup): string[] {
   return (sub.members ?? [])
-    .filter(m => m.toLowerCase().endsWith(GCP_DOMAIN))
+    .filter(m => GCP_USER_MEMBER.test(m))
     .map(emailLocalPart);
 }
 
