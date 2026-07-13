@@ -20,8 +20,7 @@ import {
  * Members of this workgroup subgroup (owner term: the `cloud-engineering/admin`
  * team) are the only principals allowed to use the DevTools plugin.
  */
-export const DEVTOOLS_ADMIN_GROUP =
-  'group:workgroups/rapid-release-model-admins';
+export const DEVTOOLS_ADMIN_GROUP = 'group:workgroups/cloud-engineering-admins';
 
 /**
  * The DevTools permissions gated to admins: the stable set
