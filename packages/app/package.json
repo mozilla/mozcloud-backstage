@@ -33,6 +33,8 @@
     "@backstage/plugin-catalog-graph": "^0.6.4",
     "@backstage/plugin-catalog-import": "^0.13.13",
     "@backstage/plugin-catalog-react": "^3.0.0",
+    "@backstage/plugin-devtools": "^0.1.40",
+    "@backstage/plugin-devtools-common": "^0.1.25",
     "@backstage/plugin-home": "^0.9.6",
     "@backstage/plugin-home-react": "^0.1.38",
     "@backstage/plugin-kubernetes": "^0.12.19",

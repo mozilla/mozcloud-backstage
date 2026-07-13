@@ -337,3 +337,8 @@ mcpActions:
       filter:
         include:
           - id: 'catalog:*'
+
+devTools:
+  scheduledTasks:
+    plugins:
+      - catalog

@@ -3,6 +3,7 @@ import CategoryIcon from '@material-ui/icons/Category';
 import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
 import GroupIcon from '@material-ui/icons/People';
+import BuildIcon from '@material-ui/icons/Build';
 import {
   Settings as SidebarSettings,
   UserSettingsSignInAvatar,
@@ -17,6 +18,8 @@ import {
   SidebarSpace,
 } from '@backstage/core-components';
 import { MyGroupsSidebarItem } from '@backstage/plugin-org';
+import { RequirePermission } from '@backstage/plugin-permission-react';
+import { devToolsAdministerPermission } from '@backstage/plugin-devtools-common';
 import { SidebarLogo } from './SidebarLogo';
 
 export const Sidebar = () => (
@@ -34,6 +37,12 @@ export const Sidebar = () => (
         pluralTitle="My Groups"
         icon={GroupIcon}
       />
+      <RequirePermission
+        permission={devToolsAdministerPermission}
+        errorPage={<></>}
+      >
+        <SidebarItem icon={BuildIcon} to="devtools" text="DevTools" />
+      </RequirePermission>
       {/* <SidebarItem icon={LibraryBooks} to="docs" text="Docs" /> */}
       {/* <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." /> */}
       <SidebarDivider />
