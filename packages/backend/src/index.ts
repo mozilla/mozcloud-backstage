@@ -77,6 +77,12 @@ backend.add(import('@backstage/plugin-auth-backend-module-gcp-iap-provider'));
 backend.add(import('./modules/authModuleAuth0NoConsentProvider'));
 
 //
+// Ownership resolver: union a signed-in person's GCP-identity workgroup
+// memberships (user:gcp/*) into their ownershipEntityRefs. See the module.
+//
+backend.add(import('./modules/authModuleGcpLinkedOwnership'));
+
+//
 // mozcloud module for the catalog backend plugin
 // -- this will read mozcloud workgroup definitions and generate group & user entities for us
 //

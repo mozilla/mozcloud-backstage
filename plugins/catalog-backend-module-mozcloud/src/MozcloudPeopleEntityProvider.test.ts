@@ -71,8 +71,8 @@ describe('MozcloudPeopleEntityProvider', () => {
       e => `${e.kind.toLowerCase()}:${e.metadata.namespace}/${e.metadata.name}`,
     );
     expect(refs).toEqual([
-      'user:people/alice-mozilla-com',
-      'user:people/bob-mozilla-com',
+      'user:people/alice',
+      'user:people/bob',
       'group:people/all-staff',
     ]);
 

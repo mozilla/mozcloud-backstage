@@ -228,9 +228,9 @@ auth:
     # filters ("My Groups", "owned by me") and permission checks behave
     # as they would for the SSO'd user.
     guest:
-      userEntityRef: user:people/wstuckey-mozilla-com
+      userEntityRef: user:people/wstuckey
       ownershipEntityRefs:
-        - user:people/wstuckey-mozilla-com
+        - user:people/wstuckey
   experimentalClientIdMetadataDocuments:
     enabled: true
 
