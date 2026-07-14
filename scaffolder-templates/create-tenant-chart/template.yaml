@@ -1,0 +1,127 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-tenant-chart
+  title: Add a chart to a tenant
+  description: >-
+    Render a new Helm chart from the mozcloud-tenant-skeleton into an
+    existing tenant's <function>-infra repo, and register its deployment
+    values in global-platform-admin.
+spec:
+  owner: group:default/engineering
+  type: service
+
+  parameters:
+    - title: Tenant and chart
+      required:
+        - tenant
+        - chartName
+        - applicationRepository
+      properties:
+        tenant:
+          title: Tenant
+          type: string
+          description: The tenant (System) to add the chart to
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: System
+        chartName:
+          title: Chart name
+          type: string
+          description: Name of the new chart
+        applicationRepository:
+          title: Application repository
+          type: string
+          description: Repository the chart's application image is built from, e.g. mozilla/widget
+        imageName:
+          title: Image name
+          type: string
+          description: Image name key registered in the tenant YAML (defaults to the chart name)
+
+    - title: Repository access
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository access
+          type: string
+          description: >-
+            Used only to authenticate you with GitHub for the pull requests
+            below. The PR destinations (<function>-infra and
+            global-platform-admin) are derived from the tenant, not from
+            this value.
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            requestUserCredentials:
+              secretsKey: USER_OAUTH_TOKEN
+              additionalScopes:
+                github:
+                  - repo
+
+  steps:
+    - id: fetch-tenant
+      name: Fetch tenant YAML
+      action: fetch:plain:file
+      input:
+        url: https://github.com/mozilla/global-platform-admin/blob/main/tenants/${{ parameters.tenant | parseEntityRef | pick('name') }}.yaml
+        targetPath: gpa/tenants/${{ parameters.tenant | parseEntityRef | pick('name') }}.yaml
+        token: ${{ secrets.USER_OAUTH_TOKEN }}
+
+    - id: read
+      name: Read tenant context
+      action: mozcloud:tenant:read
+      input:
+        tenantYamlPath: gpa/tenants/${{ parameters.tenant | parseEntityRef | pick('name') }}.yaml
+
+    - id: copier
+      name: Render chart
+      action: run:copier
+      input:
+        templateUrl: https://github.com/mozilla/mozcloud-tenant-skeleton
+        targetPath: infra/${{ parameters.tenant | parseEntityRef | pick('name') }}
+        token: ${{ secrets.USER_OAUTH_TOKEN }}
+        data:
+          name: ${{ parameters.chartName }}
+          function: ${{ steps.read.output.function }}
+          environments: ${{ steps.read.output.copierEnvironments }}
+
+    - id: chart-pr
+      name: PR the chart to <function>-infra
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=mozilla&repo=${{ steps.read.output.function }}-infra
+        branchName: add-chart-${{ parameters.chartName }}
+        title: Add chart ${{ parameters.chartName }} to ${{ parameters.tenant | parseEntityRef | pick('name') }}
+        description: Adds the ${{ parameters.chartName }} chart, rendered from mozcloud-tenant-skeleton, for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
+        sourcePath: infra
+        token: ${{ secrets.USER_OAUTH_TOKEN }}
+
+    - id: add-chart
+      name: Register chart in tenant YAML
+      action: mozcloud:tenant:add-chart
+      input:
+        tenantYamlPath: gpa/tenants/${{ parameters.tenant | parseEntityRef | pick('name') }}.yaml
+        chartName: ${{ parameters.chartName }}
+        applicationRepository: ${{ parameters.applicationRepository }}
+        imageName: ${{ parameters.imageName }}
+
+    - id: tenant-pr
+      name: PR tenant YAML to global-platform-admin
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=mozilla&repo=global-platform-admin
+        branchName: register-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}-${{ parameters.chartName }}
+        title: Register chart ${{ parameters.chartName }} for ${{ parameters.tenant | parseEntityRef | pick('name') }}
+        description: Registers the ${{ parameters.chartName }} chart's deployment values for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
+        sourcePath: gpa
+        token: ${{ secrets.USER_OAUTH_TOKEN }}
+
+  output:
+    links:
+      - title: Chart PR
+        url: ${{ steps['chart-pr'].output.remoteUrl }}
+      - title: Tenant YAML PR
+        url: ${{ steps['tenant-pr'].output.remoteUrl }}
