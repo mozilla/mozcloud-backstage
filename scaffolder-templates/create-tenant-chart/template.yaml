@@ -49,7 +49,7 @@ spec:
             GitHub OAuth provider is configured — the backend's own GitHub
             token is used to open the PRs instead.
           type: boolean
-          default: true
+          default: false
       dependencies:
         # Only render the RepoUrlPicker (which triggers the GitHub OAuth popup)
         # when authenticateAsMe is true. When false, no picker mounts, no popup
@@ -117,8 +117,8 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=mozilla&repo=${{ steps.read.output.function }}-infra
-        branchName: add-chart-${{ parameters.chartName }}
-        title: Add chart ${{ parameters.chartName }} to ${{ parameters.tenant | parseEntityRef | pick('name') }}
+        branchName: ${{ user.entity.metadata.name }}-create-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}
+        title: "feat(${{ parameters.tenant | parseEntityRef | pick('name') }}): add ${{ parameters.chartName }} chart"
         description: Adds the ${{ parameters.chartName }} chart, rendered from mozcloud-tenant-skeleton, for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
         sourcePath: infra
         token: ${{ secrets.USER_OAUTH_TOKEN }}
@@ -137,8 +137,8 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=mozilla&repo=global-platform-admin
-        branchName: register-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}-${{ parameters.chartName }}
-        title: Register chart ${{ parameters.chartName }} for ${{ parameters.tenant | parseEntityRef | pick('name') }}
+        branchName: ${{ user.entity.metadata.name }}-register-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}
+        title: "feat(${{ parameters.tenant | parseEntityRef | pick('name') }}): register ${{ parameters.chartName }} chart deployment values"
         description: Registers the ${{ parameters.chartName }} chart's deployment values for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
         sourcePath: gpa
         token: ${{ secrets.USER_OAUTH_TOKEN }}

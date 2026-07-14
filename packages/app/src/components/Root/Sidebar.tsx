@@ -4,6 +4,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
 import GroupIcon from '@material-ui/icons/People';
 import BuildIcon from '@material-ui/icons/Build';
+import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import {
   Settings as SidebarSettings,
   UserSettingsSignInAvatar,
@@ -44,7 +45,7 @@ export const Sidebar = () => (
         <SidebarItem icon={BuildIcon} to="devtools" text="DevTools" />
       </RequirePermission>
       {/* <SidebarItem icon={LibraryBooks} to="docs" text="Docs" /> */}
-      {/* <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." /> */}
+      <SidebarItem icon={AddCircleOutlineIcon} to="create" text="Create..." />
       <SidebarDivider />
       <SidebarScrollWrapper />
     </SidebarGroup>
