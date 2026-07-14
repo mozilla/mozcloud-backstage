@@ -6936,6 +6936,7 @@ __metadata:
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.9.2"
     "@backstage/cli": "npm:^0.36.2"
+    "@backstage/integration": "npm:^2.0.2"
     "@backstage/plugin-scaffolder-node": "npm:^0.13.3"
     yaml: "npm:^2.8.0"
   languageName: unknown

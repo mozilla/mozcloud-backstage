@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@backstage/backend-plugin-api": "^1.9.2",
+    "@backstage/integration": "^2.0.2",
     "@backstage/plugin-scaffolder-node": "^0.13.3",
     "yaml": "^2.8.0"
   },

@@ -1,5 +1,12 @@
-import { createBackendModule } from '@backstage/backend-plugin-api';
+import {
+  coreServices,
+  createBackendModule,
+} from '@backstage/backend-plugin-api';
 import { scaffolderActionsExtensionPoint } from '@backstage/plugin-scaffolder-node';
+import {
+  DefaultGithubCredentialsProvider,
+  ScmIntegrations,
+} from '@backstage/integration';
 import { createAddChartAction } from './actions/addChart';
 import { createReadTenantAction } from './actions/readTenant';
 import { createRunCopierAction } from './actions/runCopier';
@@ -14,11 +21,17 @@ export const scaffolderModuleMozcloud = createBackendModule({
   moduleId: 'mozcloud',
   register(reg) {
     reg.registerInit({
-      deps: { scaffolder: scaffolderActionsExtensionPoint },
-      async init({ scaffolder }) {
+      deps: {
+        scaffolder: scaffolderActionsExtensionPoint,
+        config: coreServices.rootConfig,
+      },
+      async init({ scaffolder, config }) {
+        const integrations = ScmIntegrations.fromConfig(config);
+        const githubCredentials =
+          DefaultGithubCredentialsProvider.fromIntegrations(integrations);
         scaffolder.addActions(
           createReadTenantAction(),
-          createRunCopierAction(),
+          createRunCopierAction({ githubCredentials }),
           createAddChartAction(),
         );
       },

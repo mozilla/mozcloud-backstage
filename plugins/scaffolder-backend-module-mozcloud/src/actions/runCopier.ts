@@ -6,6 +6,7 @@ import {
   resolveSafeChildPath,
   LoggerService,
 } from '@backstage/backend-plugin-api';
+import { GithubCredentialsProvider } from '@backstage/integration';
 import { spawnSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -36,6 +37,33 @@ export function injectToken(url: string, token: string | undefined): string {
     return url;
   }
   return url.replace(/^https:\/\//, `https://x-access-token:${token}@`);
+}
+
+/**
+ * Resolve the token used to clone the template repo: prefer the explicit
+ * (per-user) token, otherwise fall back to the GitHub integration credential.
+ * Returns the original token unchanged when there's nothing to resolve or the
+ * lookup fails (the caller relies on `GIT_TERMINAL_PROMPT=0` to fail fast
+ * rather than hang when the resulting token can't authenticate).
+ */
+export async function resolveCloneToken(
+  token: string | undefined,
+  githubCredentials: GithubCredentialsProvider | undefined,
+  url: string,
+  logger: LoggerService,
+): Promise<string | undefined> {
+  if (token || !githubCredentials) {
+    return token;
+  }
+  try {
+    const { token: resolved } = await githubCredentials.getCredentials({ url });
+    return resolved;
+  } catch (e) {
+    logger.warn(
+      `Could not resolve a GitHub integration credential for ${url}: ${e}`,
+    );
+    return token;
+  }
 }
 
 /**
@@ -95,7 +123,18 @@ function verifyCopierVersion(logger: LoggerService): void {
   }
 }
 
-export function createRunCopierAction() {
+export interface RunCopierActionOptions {
+  /**
+   * Resolves a GitHub credential for the template clone when the step is not
+   * given an explicit (per-user) token — e.g. local dev, where no GitHub OAuth
+   * provider is configured. Mirrors how the built-in fetch/publish actions fall
+   * back to the `integrations.github` token.
+   */
+  githubCredentials?: GithubCredentialsProvider;
+}
+
+export function createRunCopierAction(options: RunCopierActionOptions = {}) {
+  const { githubCredentials } = options;
   return createTemplateAction({
     id: 'run:copier',
     description:
@@ -153,9 +192,19 @@ export function createRunCopierAction() {
 
       verifyCopierVersion(ctx.logger);
 
+      // Prefer the per-user token (requestUserCredentials); otherwise fall back
+      // to the GitHub integration credential so the private skeleton can still
+      // be cloned in environments without a GitHub OAuth provider (local dev).
+      const cloneToken = await resolveCloneToken(
+        token,
+        githubCredentials,
+        templateUrl,
+        ctx.logger,
+      );
+
       const { bin, args, cwd } = buildCopierInvocation({
         templateUrl,
-        token,
+        token: cloneToken,
         dest,
         dataFile,
       });
@@ -164,8 +213,18 @@ export function createRunCopierAction() {
       await executeShellCommand({
         command: bin,
         args,
-        options: { cwd },
-        logger: redactingLogger(ctx.logger, token),
+        options: {
+          cwd,
+          // Never let the underlying `git clone` block on an interactive
+          // credential prompt — there's no TTY, so it would hang forever. Fail
+          // fast instead when the token is missing or unauthorized.
+          env: {
+            ...process.env,
+            GIT_TERMINAL_PROMPT: '0',
+            GCM_INTERACTIVE: 'never',
+          },
+        },
+        logger: redactingLogger(ctx.logger, cloneToken),
       });
       ctx.logger.info('copier run complete');
     },
