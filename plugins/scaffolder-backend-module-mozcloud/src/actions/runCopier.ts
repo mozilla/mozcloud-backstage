@@ -67,6 +67,21 @@ export async function resolveCloneToken(
 }
 
 /**
+ * copier only treats a source as a git repository when the URL starts with a
+ * known git prefix (`git@`, `git://`, `git+`, `https://github.com/`,
+ * `https://gitlab.com/`) or ends in `.git`. Injecting `x-access-token:...@`
+ * userinfo breaks the `https://github.com/` prefix match, so ensure an HTTPS
+ * URL ends in `.git` — otherwise copier treats it as a local path and fails
+ * with "Local template must be a directory.".
+ */
+export function ensureGitUrl(url: string): string {
+  if (/^https:\/\//.test(url) && !url.endsWith('.git')) {
+    return `${url.replace(/\/+$/, '')}.git`;
+  }
+  return url;
+}
+
+/**
  * Pure builder for the `copier copy` invocation used to render the mozcloud
  * tenant skeleton in chart mode. Kept side-effect free so it can be unit
  * tested without exec'ing a real process.
@@ -75,7 +90,7 @@ export function buildCopierInvocation(
   opts: BuildCopierInvocationOptions,
 ): CopierInvocation {
   const { templateUrl, token, dest, dataFile } = opts;
-  const authedUrl = injectToken(templateUrl, token);
+  const authedUrl = ensureGitUrl(injectToken(templateUrl, token));
   return {
     bin: 'copier',
     args: ['copy', '--defaults', '--data-file', dataFile, authedUrl, dest],

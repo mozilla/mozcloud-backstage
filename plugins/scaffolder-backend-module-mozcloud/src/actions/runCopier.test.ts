@@ -1,4 +1,8 @@
-import { buildCopierInvocation, resolveCloneToken } from './runCopier';
+import {
+  buildCopierInvocation,
+  ensureGitUrl,
+  resolveCloneToken,
+} from './runCopier';
 
 const noopLogger = {
   error: () => {},
@@ -97,7 +101,7 @@ describe('buildCopierInvocation', () => {
     expect(args.join(' ')).not.toContain('x-access-token');
   });
 
-  it('leaves the URL bare when no token is provided', () => {
+  it('leaves the URL credential-free but git-suffixed when no token is provided', () => {
     const { args } = buildCopierInvocation({
       templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
       token: '',
@@ -106,8 +110,53 @@ describe('buildCopierInvocation', () => {
     });
 
     expect(args).toContain(
-      'https://github.com/mozilla/mozcloud-tenant-skeleton',
+      'https://github.com/mozilla/mozcloud-tenant-skeleton.git',
     );
     expect(args.join(' ')).not.toContain('x-access-token');
+  });
+
+  it('keeps the token-authed URL recognizable to copier as git (.git suffix)', () => {
+    const { args } = buildCopierInvocation({
+      templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
+      token: 'ghs_x',
+      dest: '/ws/infra/acme',
+      dataFile: '/ws/.copier-data.yml',
+    });
+
+    expect(args[args.length - 2]).toBe(
+      'https://x-access-token:ghs_x@github.com/mozilla/mozcloud-tenant-skeleton.git',
+    );
+  });
+});
+
+describe('ensureGitUrl', () => {
+  it('appends .git to an https URL that lacks it', () => {
+    expect(ensureGitUrl('https://github.com/mozilla/skeleton')).toBe(
+      'https://github.com/mozilla/skeleton.git',
+    );
+  });
+
+  it('appends .git to a token-authed https URL (copier git detection)', () => {
+    expect(
+      ensureGitUrl('https://x-access-token:t@github.com/mozilla/skeleton'),
+    ).toBe('https://x-access-token:t@github.com/mozilla/skeleton.git');
+  });
+
+  it('does not double-suffix a URL already ending in .git', () => {
+    expect(ensureGitUrl('https://github.com/mozilla/skeleton.git')).toBe(
+      'https://github.com/mozilla/skeleton.git',
+    );
+  });
+
+  it('strips a trailing slash before appending .git', () => {
+    expect(ensureGitUrl('https://github.com/mozilla/skeleton/')).toBe(
+      'https://github.com/mozilla/skeleton.git',
+    );
+  });
+
+  it('leaves non-https (scp-style) URLs untouched', () => {
+    expect(ensureGitUrl('git@github.com:mozilla/skeleton.git')).toBe(
+      'git@github.com:mozilla/skeleton.git',
+    );
   });
 });
