@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.6](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.5...v0.1.6) (2026-07-14)
+
+
+### Features
+
+* add DevTools plugin gated to cloud-engineering/admins ([aebc258](https://github.com/mozilla/mozcloud-backstage/commit/aebc2587d81253e6e88b581c8e8b9ab5e429406d))
+* **app:** add DevTools page and admin-gated sidebar entry ([10418ce](https://github.com/mozilla/mozcloud-backstage/commit/10418ce60b795c7ed740ccb9cbbfa01b2bf04c6f))
+* **app:** exclude org-wide admin groups from aggregated member lists ([3f9cdb0](https://github.com/mozilla/mozcloud-backstage/commit/3f9cdb0b609ef3b420254642657fe0d0ae0a5fc0))
+* **app:** pruned workgroup member aggregation (exclude org-admin groups) ([d161d7a](https://github.com/mozilla/mozcloud-backstage/commit/d161d7aa05cebdd2a180e8722f0e252656bdba69))
+* **app:** use pruned members card that hides org-admin groups from other workgroups ([d364c50](https://github.com/mozilla/mozcloud-backstage/commit/d364c50be2c78e9c2fa76a257a7812d262d34a91))
+* **backend:** add DevTools backend plugin ([19a8874](https://github.com/mozilla/mozcloud-backstage/commit/19a88747ebab9032cca263d769de04922c92a371))
+* **backend:** gate DevTools behind cloud-engineering/admin permission policy ([75ab1d8](https://github.com/mozilla/mozcloud-backstage/commit/75ab1d887584002b224137beac8b38e8307fb2b1))
+* **backend:** union GCP-linked workgroup groups into sign-in ownership ([a24515e](https://github.com/mozilla/mozcloud-backstage/commit/a24515eec44b8cd53f7c0739f4376666933b936c))
+* **catalog/auth:** link GCP-IAM workgroup admins to signed-in people for ownership ([97014e5](https://github.com/mozilla/mozcloud-backstage/commit/97014e5b590ab87652ac17867abd07a2093330b3))
+* **mozcloud:** emit user:gcp entities and link them into subgroup members ([37abb51](https://github.com/mozilla/mozcloud-backstage/commit/37abb510eadf3f50210a9b9d5b2db9fd7eb37b5f))
+* **mozcloud:** key People user entities by email local-part ([29f53d5](https://github.com/mozilla/mozcloud-backstage/commit/29f53d50e0a55f74d16628e1ec93d5b795cc10fe))
+
+
+### Bug Fixes
+
+* **backend:** correct DevTools admin group to cloud-engineering-admins (plural) ([6d45015](https://github.com/mozilla/mozcloud-backstage/commit/6d45015ff2fd3aa391f797af8816b15e8ca30da3))
+* **backend:** declare @backstage/plugin-catalog-node & catalog-model deps ([a466e45](https://github.com/mozilla/mozcloud-backstage/commit/a466e4529482975ce9f132dbd7a40bde668197a4))
+* **backend:** gate all DevTools permissions via devToolsPermissions ([2db51af](https://github.com/mozilla/mozcloud-backstage/commit/2db51af239b5d7da75adc460abd79bd5ec7fa161))
+* **ci:** build & push release image via release-please output ([57c54be](https://github.com/mozilla/mozcloud-backstage/commit/57c54bedd9ae78b022c38b2a6fa2e8b69506f947))
+* **ci:** trigger build-and-push for release-please releases ([0fcbcbb](https://github.com/mozilla/mozcloud-backstage/commit/0fcbcbb39076c9c54e2ac86e22618450e3cf9fbc))
+* **mozcloud:** canonicalize person emails in usersQuery (strip plus-addressing, collapse aliases) ([c29a70a](https://github.com/mozilla/mozcloud-backstage/commit/c29a70a9851911a85133920730f60b487b3bbd52))
+* **mozcloud:** only emit user:gcp for bare gcp-domain emails, not group:/serviceAccount: principals ([ac171f0](https://github.com/mozilla/mozcloud-backstage/commit/ac171f0acb4b4d84665924093a0e2320e8ef3994))
+* **mozcloud:** sanitize email local-part to a valid entity name (plus-addressing) ([8ff09a9](https://github.com/mozilla/mozcloud-backstage/commit/8ff09a9f7a6db8ddc1ce58a4ee857e24314b7dd1))
+* **mozcloud:** source user:gcp entities from sg.users (human members), not sg.members (IAM bindings) ([a01591d](https://github.com/mozilla/mozcloud-backstage/commit/a01591d87c0c29bdf1ea2d708f59125dec871921))
+
 ## [0.1.5](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.4...v0.1.5) (2026-06-26)
 
 
