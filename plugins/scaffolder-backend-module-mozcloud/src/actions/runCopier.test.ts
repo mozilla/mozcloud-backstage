@@ -1,8 +1,47 @@
 import {
   buildCopierInvocation,
   ensureGitUrl,
+  redactingLogger,
   resolveCloneToken,
 } from './runCopier';
+
+describe('redactingLogger', () => {
+  const makeSpyLogger = () => {
+    const logger: any = {
+      error: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      child: jest.fn(() => logger),
+    };
+    return logger;
+  };
+
+  it('replaces the secret in messages at every level', () => {
+    const base = makeSpyLogger();
+    const log = redactingLogger(base, 'ghs_secret');
+    log.info('cloning https://x-access-token:ghs_secret@github.com/x');
+    log.error('boom ghs_secret');
+    expect(base.info).toHaveBeenCalledWith(
+      'cloning https://x-access-token:***@github.com/x',
+      undefined,
+    );
+    expect(base.error).toHaveBeenCalledWith('boom ***', undefined);
+  });
+
+  it('still redacts through a child logger (no bypass)', () => {
+    const base = makeSpyLogger();
+    const child = redactingLogger(base, 'ghs_secret').child({ run: 1 });
+    child.info('child log ghs_secret here');
+    expect(base.info).toHaveBeenCalledWith('child log *** here', undefined);
+  });
+
+  it('passes messages through unchanged when there is no secret', () => {
+    const base = makeSpyLogger();
+    redactingLogger(base, undefined).info('nothing to hide');
+    expect(base.info).toHaveBeenCalledWith('nothing to hide', undefined);
+  });
+});
 
 const noopLogger = {
   error: () => {},

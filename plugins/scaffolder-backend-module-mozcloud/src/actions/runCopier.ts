@@ -99,7 +99,10 @@ export function buildCopierInvocation(
 }
 
 /** Redact a secret from any string handed to a wrapped LoggerService. */
-function redactingLogger(logger: LoggerService, secret: string | undefined) {
+export function redactingLogger(
+  logger: LoggerService,
+  secret: string | undefined,
+): LoggerService {
   const redact = (message: string) =>
     secret ? message.split(secret).join('***') : message;
   return {
@@ -111,7 +114,8 @@ function redactingLogger(logger: LoggerService, secret: string | undefined) {
       logger.info(redact(message), meta as any),
     debug: (message: string, meta?: Error | object) =>
       logger.debug(redact(message), meta as any),
-    child: (meta: object) => logger.child(meta as any),
+    // Wrap the child logger too, so redaction is not bypassed by `.child()`.
+    child: (meta: object) => redactingLogger(logger.child(meta as any), secret),
   } as LoggerService;
 }
 

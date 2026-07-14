@@ -21,10 +21,12 @@ ENV PYTHON=/usr/bin/python3
 # plus a Python venv used by scaffolder Python tooling (copier, for the
 # `run:copier` action). A venv keeps pip off bookworm's PEP-668 externally-managed
 # system Python; it's appended to PATH so it doesn't shadow /usr/bin/python3.
+# `git` is required at runtime: copier shells out to it to clone the template
+# repo, and the slim base image does not ship it.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-venv g++ build-essential && \
+    apt-get install -y --no-install-recommends python3 python3-venv git g++ build-essential && \
     python3 -m venv /opt/pyenv && \
     rm -rf /var/lib/apt/lists/*
 ENV PATH="${PATH}:/opt/pyenv/bin"
