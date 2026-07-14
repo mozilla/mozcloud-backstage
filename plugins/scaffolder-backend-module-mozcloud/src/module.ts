@@ -8,6 +8,7 @@ import {
   ScmIntegrations,
 } from '@backstage/integration';
 import { createAddChartAction } from './actions/addChart';
+import { createEnsureGithubAuthAction } from './actions/ensureGithubAuth';
 import { createReadTenantAction } from './actions/readTenant';
 import { createRunCopierAction } from './actions/runCopier';
 
@@ -30,6 +31,7 @@ export const scaffolderModuleMozcloud = createBackendModule({
         const githubCredentials =
           DefaultGithubCredentialsProvider.fromIntegrations(integrations);
         scaffolder.addActions(
+          createEnsureGithubAuthAction({ githubCredentials }),
           createReadTenantAction(),
           createRunCopierAction({ githubCredentials }),
           createAddChartAction(),

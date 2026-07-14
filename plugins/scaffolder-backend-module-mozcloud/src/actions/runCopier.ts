@@ -11,6 +11,7 @@ import { spawnSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { stringify } from 'yaml';
+import { resolveGithubToken } from './ensureGithubAuth';
 
 const MIN_COPIER_MAJOR_VERSION = 9;
 
@@ -49,33 +50,6 @@ export function buildGitAuthEnv(
     GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
     GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
   };
-}
-
-/**
- * Resolve the token used to clone the template repo: prefer the explicit
- * (per-user) token, otherwise fall back to the GitHub integration credential.
- * Returns the original token unchanged when there's nothing to resolve or the
- * lookup fails (the caller relies on `GIT_TERMINAL_PROMPT=0` to fail fast
- * rather than hang when the resulting token can't authenticate).
- */
-export async function resolveCloneToken(
-  token: string | undefined,
-  githubCredentials: GithubCredentialsProvider | undefined,
-  url: string,
-  logger: LoggerService,
-): Promise<string | undefined> {
-  if (token || !githubCredentials) {
-    return token;
-  }
-  try {
-    const { token: resolved } = await githubCredentials.getCredentials({ url });
-    return resolved;
-  } catch (e) {
-    logger.warn(
-      `Could not resolve a GitHub integration credential for ${url}: ${e}`,
-    );
-    return token;
-  }
 }
 
 /**
@@ -228,7 +202,7 @@ export function createRunCopierAction(options: RunCopierActionOptions = {}) {
       // Prefer the per-user token (requestUserCredentials); otherwise fall back
       // to the GitHub integration credential so the private skeleton can still
       // be cloned in environments without a GitHub OAuth provider (local dev).
-      const cloneToken = await resolveCloneToken(
+      const cloneToken = await resolveGithubToken(
         token,
         githubCredentials,
         templateUrl,
