@@ -237,7 +237,7 @@ auth:
         clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
         signIn:
           resolvers:
-            - resolver: usernameMatchingUserEntityAnnotation
+            - resolver: userIdMatchingUserEntityAnnotation
   experimentalClientIdMetadataDocuments:
     enabled: true
 
@@ -325,8 +325,10 @@ catalog:
     - allow: [Component, System, API, Resource, Location, User, Group, Template]
 
   locations:
+    # Path is relative to the backend's working directory (packages/backend in
+    # local `yarn start`), matching the stock `../../examples/...` convention.
     - type: file
-      target: scaffolder-templates/*/template.yaml
+      target: ../../scaffolder-templates/*/template.yaml
       rules:
         - allow:
             - Template
