@@ -9,6 +9,21 @@ export interface AddChartOptions {
   imageName: string;
 }
 
+// MozCloud paved-path image tag formats (Confluence "Standards: Container
+// Images"): main pushes are tagged with a 10-char lowercase-hex short git SHA;
+// releases are tagged with a semver git tag (vX.Y.Z).
+const SHORT_SHA_REGEX = '^[0-9a-f]{10}$';
+const SEMVER_TAG_REGEX = '^v[0-9]+\\.[0-9]+\\.[0-9]+$';
+
+/**
+ * ArgoCD Image Updater tag-filter regex for an environment, per the paved-path
+ * tagging standard: prod tracks semver release tags; every other environment
+ * (dev/stage/…) tracks main-branch short-SHA builds.
+ */
+export function imageRegexForEnv(envName: string): string {
+  return envName === 'prod' ? SEMVER_TAG_REGEX : SHORT_SHA_REGEX;
+}
+
 /**
  * Merge a new chart into a tenant YAML, preserving comments/formatting (eemeli
  * `yaml` Document round-trip). Adds `globals.deployment.charts.<name>` and a
@@ -44,7 +59,7 @@ export function mergeChartIntoTenantYaml(
       doc.setIn(['realms', realmName, 'environments', i, 'charts', chartName], {
         release_name: chartName,
         images: {
-          [imageName]: { image_regex: `^${envName}-.{40}$` },
+          [imageName]: { image_regex: imageRegexForEnv(envName) },
         },
       });
     });

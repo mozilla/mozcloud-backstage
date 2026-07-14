@@ -1,7 +1,19 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { parseDocument } from 'yaml';
-import { mergeChartIntoTenantYaml } from './addChart';
+import { imageRegexForEnv, mergeChartIntoTenantYaml } from './addChart';
+
+describe('imageRegexForEnv', () => {
+  it('uses the semver release-tag regex for prod', () => {
+    expect(imageRegexForEnv('prod')).toBe('^v[0-9]+\\.[0-9]+\\.[0-9]+$');
+  });
+
+  it('uses the 10-char short-SHA regex for non-prod envs', () => {
+    expect(imageRegexForEnv('dev')).toBe('^[0-9a-f]{10}$');
+    expect(imageRegexForEnv('stage')).toBe('^[0-9a-f]{10}$');
+    expect(imageRegexForEnv('anything-else')).toBe('^[0-9a-f]{10}$');
+  });
+});
 
 const fixture = () =>
   readFileSync(resolve(__dirname, '../__fixtures__/tenant.yaml'), 'utf8');
@@ -37,26 +49,26 @@ describe('mergeChartIntoTenantYaml', () => {
     ).toBe('image.repository');
   });
 
-  it('adds a per-environment charts entry with release_name + env-specific image_regex', () => {
+  it('adds a per-environment charts entry with release_name + paved-path image_regex', () => {
     const out = mergeChartIntoTenantYaml(fixture(), opts);
     const doc = parseDocument(out);
-    // find the prod env
     const realms: any = doc.toJS().realms;
     const prodEnv = realms.prod.environments.find(
       (e: any) => e.name === 'prod',
     );
     expect(prodEnv.charts.widget.release_name).toBe('widget');
+    // prod tracks semver release tags
     expect(prodEnv.charts.widget.images.widget.image_regex).toBe(
-      '^prod-.{40}$',
+      '^v[0-9]+\\.[0-9]+\\.[0-9]+$',
     );
-    // every environment gets an entry with its own env-specific regex
+    // non-prod envs track main-branch 10-char short SHAs
     const byName = (name: string) =>
       realms.nonprod.environments.find((e: any) => e.name === name);
     expect(byName('dev').charts.widget.images.widget.image_regex).toBe(
-      '^dev-.{40}$',
+      '^[0-9a-f]{10}$',
     );
     expect(byName('stage').charts.widget.images.widget.image_regex).toBe(
-      '^stage-.{40}$',
+      '^[0-9a-f]{10}$',
     );
   });
 

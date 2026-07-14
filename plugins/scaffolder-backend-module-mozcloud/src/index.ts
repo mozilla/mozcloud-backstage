@@ -1,5 +1,6 @@
 export {
   createAddChartAction,
+  imageRegexForEnv,
   mergeChartIntoTenantYaml,
 } from './actions/addChart';
 export type { AddChartOptions } from './actions/addChart';
