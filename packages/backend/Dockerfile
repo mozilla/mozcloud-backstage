@@ -73,6 +73,13 @@ RUN --mount=type=cache,target=/home/node/.cache/yarn,sharing=locked,uid=1000,gid
 # This will include the examples, if you don't need these simply remove this line
 COPY --chown=node:node examples ./examples
 
+# Bundle scaffolder software templates into the image so they can be discovered
+# via a `catalog.locations` file target at runtime. Note: the container cwd is
+# /app, so the production config must target `scaffolder-templates/*/template.yaml`
+# (NOT the `../../`-prefixed path that app-config.yaml uses for local dev, where
+# the backend runs from packages/backend).
+COPY --chown=node:node scaffolder-templates ./scaffolder-templates
+
 # Then copy the rest of the backend bundle, along with any other files we might want.
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
