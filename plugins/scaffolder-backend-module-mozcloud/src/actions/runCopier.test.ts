@@ -1,5 +1,6 @@
 import {
   buildCopierInvocation,
+  buildGitAuthEnv,
   ensureGitUrl,
   redactingLogger,
   resolveCloneToken,
@@ -89,10 +90,9 @@ describe('resolveCloneToken', () => {
 });
 
 describe('buildCopierInvocation', () => {
-  it('builds a headless copier chart invocation with token auth + data', () => {
+  it('builds a headless copier chart invocation with a bare (credential-free) URL', () => {
     const { bin, args, cwd } = buildCopierInvocation({
       templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
-      token: 'ghs_x',
       dest: '/ws/infra/acme',
       dataFile: '/ws/.copier-data.yml',
     });
@@ -106,30 +106,28 @@ describe('buildCopierInvocation', () => {
         '/ws/.copier-data.yml',
       ]),
     );
-    // token injected into the clone URL
-    expect(args.join(' ')).toContain(
-      'x-access-token:ghs_x@github.com/mozilla/mozcloud-tenant-skeleton',
+    // The source URL is bare + git-suffixed, placed right before the dest.
+    expect(args[args.length - 2]).toBe(
+      'https://github.com/mozilla/mozcloud-tenant-skeleton.git',
     );
     expect(args[args.length - 1]).toBe('/ws/infra/acme');
     expect(cwd).toBe('/ws/infra');
   });
 
-  it('places the token-authed URL immediately before the destination', () => {
+  it('never embeds a credential in the clone URL (regression: copier _src_path leak)', () => {
     const { args } = buildCopierInvocation({
       templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
-      token: 'ghs_x',
       dest: '/ws/infra/acme',
       dataFile: '/ws/.copier-data.yml',
     });
 
-    expect(args[args.length - 2]).toContain('x-access-token:ghs_x@');
-    expect(args[args.length - 1]).toBe('/ws/infra/acme');
+    expect(args.join(' ')).not.toContain('x-access-token');
+    expect(args.join(' ')).not.toContain('@github.com');
   });
 
-  it('does not mutate a template URL that already has no https prefix', () => {
+  it('passes a non-https (scp-style) URL through unchanged', () => {
     const { args } = buildCopierInvocation({
       templateUrl: 'git@github.com:mozilla/mozcloud-tenant-skeleton.git',
-      token: 'ghs_x',
       dest: '/ws/infra/acme',
       dataFile: '/ws/.copier-data.yml',
     });
@@ -137,34 +135,25 @@ describe('buildCopierInvocation', () => {
     expect(args).toContain(
       'git@github.com:mozilla/mozcloud-tenant-skeleton.git',
     );
-    expect(args.join(' ')).not.toContain('x-access-token');
+  });
+});
+
+describe('buildGitAuthEnv', () => {
+  it('returns an http.extraheader with the token as Basic auth (never in a URL)', () => {
+    const env = buildGitAuthEnv('ghs_secret');
+    expect(env.GIT_CONFIG_COUNT).toBe('1');
+    expect(env.GIT_CONFIG_KEY_0).toBe('http.https://github.com/.extraheader');
+    const expected = Buffer.from('x-access-token:ghs_secret').toString(
+      'base64',
+    );
+    expect(env.GIT_CONFIG_VALUE_0).toBe(`Authorization: Basic ${expected}`);
+    // the raw token is not present verbatim (it's base64-encoded)
+    expect(env.GIT_CONFIG_VALUE_0).not.toContain('ghs_secret');
   });
 
-  it('leaves the URL credential-free but git-suffixed when no token is provided', () => {
-    const { args } = buildCopierInvocation({
-      templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
-      token: '',
-      dest: '/ws/infra/acme',
-      dataFile: '/ws/.copier-data.yml',
-    });
-
-    expect(args).toContain(
-      'https://github.com/mozilla/mozcloud-tenant-skeleton.git',
-    );
-    expect(args.join(' ')).not.toContain('x-access-token');
-  });
-
-  it('keeps the token-authed URL recognizable to copier as git (.git suffix)', () => {
-    const { args } = buildCopierInvocation({
-      templateUrl: 'https://github.com/mozilla/mozcloud-tenant-skeleton',
-      token: 'ghs_x',
-      dest: '/ws/infra/acme',
-      dataFile: '/ws/.copier-data.yml',
-    });
-
-    expect(args[args.length - 2]).toBe(
-      'https://x-access-token:ghs_x@github.com/mozilla/mozcloud-tenant-skeleton.git',
-    );
+  it('returns an empty env when there is no token', () => {
+    expect(buildGitAuthEnv(undefined)).toEqual({});
+    expect(buildGitAuthEnv('')).toEqual({});
   });
 });
 

@@ -16,7 +16,6 @@ const MIN_COPIER_MAJOR_VERSION = 9;
 
 export interface BuildCopierInvocationOptions {
   templateUrl: string;
-  token: string | undefined;
   dest: string;
   dataFile: string;
 }
@@ -28,15 +27,28 @@ export interface CopierInvocation {
 }
 
 /**
- * Inject a GitHub token into an HTTPS clone URL as
- * `https://x-access-token:<token>@github.com/...`. Non-HTTPS URLs (e.g.
- * `git@github.com:...`) and a falsy token are passed through unchanged.
+ * Build the git environment that authenticates the template clone WITHOUT
+ * putting the token in the clone URL.
+ *
+ * copier records the source URL verbatim as `_src_path` in the generated
+ * `.copier-answers.yml`, which is committed to the PR — so a token embedded in
+ * the URL would leak into the repo. Instead we pass a bare URL to copier and
+ * hand git an `http.extraheader` (the same mechanism GitHub Actions uses),
+ * scoped to github.com, via `GIT_CONFIG_*` env vars so nothing is persisted to
+ * disk. Returns an empty object when there is no token.
  */
-export function injectToken(url: string, token: string | undefined): string {
-  if (!token || !/^https:\/\//.test(url)) {
-    return url;
+export function buildGitAuthEnv(
+  token: string | undefined,
+): Record<string, string> {
+  if (!token) {
+    return {};
   }
-  return url.replace(/^https:\/\//, `https://x-access-token:${token}@`);
+  const basic = Buffer.from(`x-access-token:${token}`).toString('base64');
+  return {
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
+  };
 }
 
 /**
@@ -89,11 +101,13 @@ export function ensureGitUrl(url: string): string {
 export function buildCopierInvocation(
   opts: BuildCopierInvocationOptions,
 ): CopierInvocation {
-  const { templateUrl, token, dest, dataFile } = opts;
-  const authedUrl = ensureGitUrl(injectToken(templateUrl, token));
+  const { templateUrl, dest, dataFile } = opts;
+  // Bare URL only — no credentials. Auth is supplied out-of-band via
+  // buildGitAuthEnv so the token never lands in copier's `_src_path`.
+  const cloneUrl = ensureGitUrl(templateUrl);
   return {
     bin: 'copier',
-    args: ['copy', '--defaults', '--data-file', dataFile, authedUrl, dest],
+    args: ['copy', '--defaults', '--data-file', dataFile, cloneUrl, dest],
     cwd: dirname(dest),
   };
 }
@@ -223,7 +237,6 @@ export function createRunCopierAction(options: RunCopierActionOptions = {}) {
 
       const { bin, args, cwd } = buildCopierInvocation({
         templateUrl,
-        token: cloneToken,
         dest,
         dataFile,
       });
@@ -234,11 +247,14 @@ export function createRunCopierAction(options: RunCopierActionOptions = {}) {
         args,
         options: {
           cwd,
-          // Never let the underlying `git clone` block on an interactive
-          // credential prompt — there's no TTY, so it would hang forever. Fail
-          // fast instead when the token is missing or unauthorized.
           env: {
             ...process.env,
+            // Authenticate the clone via an http header, NOT the URL, so the
+            // token never reaches copier's committed `_src_path`.
+            ...buildGitAuthEnv(cloneToken),
+            // Never let the underlying `git clone` block on an interactive
+            // credential prompt — there's no TTY, so it would hang forever.
+            // Fail fast instead when the token is missing or unauthorized.
             GIT_TERMINAL_PROMPT: '0',
             GCM_INTERACTIVE: 'never',
           },

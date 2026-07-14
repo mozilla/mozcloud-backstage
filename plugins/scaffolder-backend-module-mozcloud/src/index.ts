@@ -11,7 +11,7 @@ export type { TenantContext } from './actions/readTenant';
 export {
   createRunCopierAction,
   buildCopierInvocation,
-  injectToken,
+  buildGitAuthEnv,
 } from './actions/runCopier';
 export type {
   BuildCopierInvocationOptions,
