@@ -61,19 +61,6 @@ spec:
       input:
         tenantYamlPath: gpa/tenants/${{ parameters.tenant | parseEntityRef | pick('name') }}.yaml
 
-    # Fail fast with a clear message if the effective GitHub credential (per-user
-    # token, else the integration token) can't access the repos we're about to
-    # clone from and open PRs against.
-    - id: ensure-auth
-      name: Verify GitHub access
-      action: github:ensureAuth
-      input:
-        token: ${{ secrets.USER_OAUTH_TOKEN }}
-        repositories:
-          - mozilla/mozcloud-tenant-skeleton
-          - mozilla/${{ steps.read.output.function }}-infra
-          - mozilla/global-platform-admin
-
     - id: copier
       name: Render chart
       action: run:copier

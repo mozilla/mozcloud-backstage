@@ -11,14 +11,10 @@ export {
 } from './actions/readTenant';
 export type { TenantContext } from './actions/readTenant';
 export {
-  createEnsureGithubAuthAction,
-  parseOwnerRepo,
-  resolveGithubToken,
-} from './actions/ensureGithubAuth';
-export {
   createRunCopierAction,
   buildCopierInvocation,
   buildGitAuthEnv,
+  resolveGithubToken,
 } from './actions/runCopier';
 export type {
   BuildCopierInvocationOptions,
