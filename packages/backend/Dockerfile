@@ -18,10 +18,14 @@ FROM node:20-bookworm-slim
 ENV PYTHON=/usr/bin/python3
 
 # Install isolate-vm dependencies, these are needed by the @backstage/plugin-scaffolder-backend.
+# Also install copier (via pipx) — the `run:copier` scaffolder action execs it to
+# render the mozcloud-tenant-skeleton chart template. pipx isolates copier in its own
+# venv so it lands on PATH without tripping bookworm's PEP-668 "externally-managed" pip.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends python3 g++ build-essential && \
+    apt-get install -y --no-install-recommends python3 python3-venv pipx g++ build-essential && \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'copier>=9,<10' && \
     rm -rf /var/lib/apt/lists/*
 
 # Install sqlite3 dependencies. You can skip this if you don't use sqlite3 in the image,
