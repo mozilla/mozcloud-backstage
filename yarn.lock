@@ -6930,7 +6930,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@internal/plugin-scaffolder-backend-module-mozcloud@workspace:plugins/scaffolder-backend-module-mozcloud":
+"@internal/plugin-scaffolder-backend-module-mozcloud@workspace:^, @internal/plugin-scaffolder-backend-module-mozcloud@workspace:plugins/scaffolder-backend-module-mozcloud":
   version: 0.0.0-use.local
   resolution: "@internal/plugin-scaffolder-backend-module-mozcloud@workspace:plugins/scaffolder-backend-module-mozcloud"
   dependencies:
@@ -15874,6 +15874,7 @@ __metadata:
     "@backstage/plugin-search-backend-node": "npm:^1.4.4"
     "@backstage/plugin-techdocs-backend": "npm:^2.2.0"
     "@internal/plugin-catalog-backend-module-mozcloud": "workspace:^"
+    "@internal/plugin-scaffolder-backend-module-mozcloud": "workspace:^"
     app: "link:../app"
     better-sqlite3: "npm:^12.0.0"
     node-gyp: "npm:^10.0.0"
