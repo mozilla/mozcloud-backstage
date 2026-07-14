@@ -117,7 +117,7 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=mozilla&repo=${{ steps.read.output.function }}-infra
-        branchName: ${{ user.entity.metadata.name }}-create-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}
+        branchName: ${{ user.entity.metadata.name }}-${{ parameters.tenant | parseEntityRef | pick('name') }}-${{ parameters.chartName }}
         title: "feat(${{ parameters.tenant | parseEntityRef | pick('name') }}): add ${{ parameters.chartName }} chart"
         description: Adds the ${{ parameters.chartName }} chart, rendered from mozcloud-tenant-skeleton, for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
         sourcePath: infra
@@ -137,7 +137,7 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=mozilla&repo=global-platform-admin
-        branchName: ${{ user.entity.metadata.name }}-register-chart-${{ parameters.tenant | parseEntityRef | pick('name') }}
+        branchName: ${{ user.entity.metadata.name }}-${{ parameters.tenant | parseEntityRef | pick('name') }}-${{ parameters.chartName }}
         title: "feat(${{ parameters.tenant | parseEntityRef | pick('name') }}): register ${{ parameters.chartName }} chart deployment values"
         description: Registers the ${{ parameters.chartName }} chart's deployment values for tenant ${{ parameters.tenant | parseEntityRef | pick('name') }}.
         sourcePath: gpa
