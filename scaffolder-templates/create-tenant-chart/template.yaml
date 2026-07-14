@@ -123,6 +123,15 @@ spec:
         sourcePath: infra
         token: ${{ secrets.USER_OAUTH_TOKEN }}
 
+    # Stage the chart-values template (ships beside this template.yaml) into the
+    # workspace so add-chart can read the static chart shape from it.
+    - id: chart-values
+      name: Stage chart values template
+      action: fetch:plain:file
+      input:
+        url: ./chart-values.yaml.njk
+        targetPath: chart-values.yaml.njk
+
     - id: add-chart
       name: Register chart in tenant YAML
       action: mozcloud:tenant:add-chart
@@ -131,6 +140,7 @@ spec:
         chartName: ${{ parameters.chartName }}
         applicationRepository: ${{ parameters.applicationRepository }}
         imageName: ${{ parameters.imageName }}
+        valuesTemplatePath: chart-values.yaml.njk
 
     - id: tenant-pr
       name: PR tenant YAML to global-platform-admin

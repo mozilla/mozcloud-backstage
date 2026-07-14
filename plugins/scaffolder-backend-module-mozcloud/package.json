@@ -23,10 +23,12 @@
     "@backstage/backend-plugin-api": "^1.9.2",
     "@backstage/integration": "^2.0.2",
     "@backstage/plugin-scaffolder-node": "^0.13.3",
+    "nunjucks": "^3.2.4",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.36.2"
+    "@backstage/cli": "^0.36.2",
+    "@types/nunjucks": "^3.2.6"
   },
   "files": [
     "dist"

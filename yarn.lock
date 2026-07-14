@@ -6938,6 +6938,8 @@ __metadata:
     "@backstage/cli": "npm:^0.36.2"
     "@backstage/integration": "npm:^2.0.2"
     "@backstage/plugin-scaffolder-node": "npm:^0.13.3"
+    "@types/nunjucks": "npm:^3.2.6"
+    nunjucks: "npm:^3.2.4"
     yaml: "npm:^2.8.0"
   languageName: unknown
   linkType: soft
@@ -13784,6 +13786,13 @@ __metadata:
   dependencies:
     undici-types: "npm:~7.16.0"
   checksum: 10c0/710050c42f89075c4479e4e1e4c2532486b0c41b1e2a8a13ad88641c88b88cdaea87414e19224f30028719737bd70e327edcaa184d50e86b9418941edd7eb02b
+  languageName: node
+  linkType: hard
+
+"@types/nunjucks@npm:^3.2.6":
+  version: 3.2.6
+  resolution: "@types/nunjucks@npm:3.2.6"
+  checksum: 10c0/bc62c5c9305c0c63a49a55c3553393fdc84d123b4831668212380077ee6646c3ba52bc49e3c651257addf3a47d775707dcefeaf5e1b76cf7f680096939894142
   languageName: node
   linkType: hard
 
@@ -27052,7 +27061,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nunjucks@npm:^3.2.3":
+"nunjucks@npm:^3.2.3, nunjucks@npm:^3.2.4":
   version: 3.2.4
   resolution: "nunjucks@npm:3.2.4"
   dependencies:

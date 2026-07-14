@@ -2,6 +2,7 @@ export {
   createAddChartAction,
   imageRegexForEnv,
   mergeChartIntoTenantYaml,
+  renderChartValues,
 } from './actions/addChart';
 export type { AddChartOptions } from './actions/addChart';
 export {
