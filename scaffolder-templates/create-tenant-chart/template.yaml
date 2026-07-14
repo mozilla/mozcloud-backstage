@@ -11,6 +11,13 @@ spec:
   owner: group:workgroups/cloud-engineering
   type: service
 
+  # Frontend form decorator (packages/app overrides/scaffolder.tsx): on submit it
+  # obtains the user's GitHub token (initiating sign-in if needed) and stashes it
+  # as secrets.USER_OAUTH_TOKEN so the PR steps author as the initiator. Falls
+  # back to the backend integration token when no GitHub provider is configured.
+  formDecorators:
+    - id: mozcloud:github-auth
+
   parameters:
     - title: Tenant and chart
       required:
@@ -38,52 +45,6 @@ spec:
           title: Image name
           type: string
           description: Image name key registered in the tenant YAML (defaults to the chart name)
-
-    - title: Repository access
-      properties:
-        authenticateAsMe:
-          title: Open the pull requests as me (GitHub sign-in)
-          description: >-
-            Authenticate with GitHub so the PRs are authored by you. Leave this
-            on for stage/prod. Turn it OFF for local development, where no
-            GitHub OAuth provider is configured — the backend's own GitHub
-            token is used to open the PRs instead.
-          type: boolean
-          default: false
-      dependencies:
-        # Only render the RepoUrlPicker (which triggers the GitHub OAuth popup)
-        # when authenticateAsMe is true. When false, no picker mounts, no popup
-        # fires, USER_OAUTH_TOKEN stays empty, and the GitHub steps fall back to
-        # the integration token.
-        authenticateAsMe:
-          oneOf:
-            - properties:
-                authenticateAsMe:
-                  enum:
-                    - false
-            - required:
-                - repoUrl
-              properties:
-                authenticateAsMe:
-                  enum:
-                    - true
-                repoUrl:
-                  title: Repository access
-                  type: string
-                  description: >-
-                    Used only to authenticate you with GitHub for the pull
-                    requests below. The PR destinations (<function>-infra and
-                    global-platform-admin) are derived from the tenant, not
-                    from this value.
-                  ui:field: RepoUrlPicker
-                  ui:options:
-                    allowedHosts:
-                      - github.com
-                    requestUserCredentials:
-                      secretsKey: USER_OAUTH_TOKEN
-                      additionalScopes:
-                        github:
-                          - repo
 
   steps:
     - id: fetch-tenant
