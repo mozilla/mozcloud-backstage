@@ -1,7 +1,7 @@
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
 import { useEntity } from '@backstage/plugin-catalog-react';
-import { MembersListCard } from '@backstage/plugin-org';
+import { WorkgroupMembersListCard } from '../components/catalog/WorkgroupMembersListCard';
 
 /**
  * Override for `entity-card:org/ownership`. Replaces the stock loader
@@ -29,25 +29,18 @@ const ownershipOverride = EntityCardBlueprint.makeWithOverrides({
 });
 
 /**
- * Branch the MembersListCard's relation-aggregation behavior by group
- * type:
+ * Branch the members card's relation-aggregation behavior by group type:
  *  - `workgroup` (the parent) shows aggregated members — i.e. the union
- *    of every subgroup's members — with the toggle visible so users can
- *    flip to direct members (which is empty for parents anyway).
- *  - `workgroup-subgroup` shows only direct members; the toggle is
- *    hidden because aggregating "down" from a subgroup has no meaning
- *    (subgroups have no children).
+ *    of every subgroup's members, with the org-wide admin groups pruned
+ *    (see `aggregateMembers`) so they don't flood every workgroup's card.
+ *  - `workgroup-subgroup` shows only direct members; aggregating "down"
+ *    from a subgroup has no meaning (subgroups have no children).
  */
 function TypeAwareMembersListCard() {
   const { entity } = useEntity();
   const isParent =
     (entity.spec as { type?: string } | undefined)?.type === 'workgroup';
-  return (
-    <MembersListCard
-      relationAggregation={isParent ? 'aggregated' : 'direct'}
-      showAggregateMembersToggle
-    />
-  );
+  return <WorkgroupMembersListCard aggregated={isParent} />;
 }
 
 const membersListOverride = EntityCardBlueprint.makeWithOverrides({
