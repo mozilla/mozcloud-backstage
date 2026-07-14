@@ -8,7 +8,7 @@ metadata:
     existing tenant's <function>-infra repo, and register its deployment
     values in global-platform-admin.
 spec:
-  owner: group:default/engineering
+  owner: group:workgroups/cloud-engineering
   type: service
 
   parameters:
