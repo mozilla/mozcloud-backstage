@@ -51,6 +51,7 @@
     "@backstage/plugin-search-backend-node": "^1.4.4",
     "@backstage/plugin-techdocs-backend": "^2.2.0",
     "@internal/plugin-catalog-backend-module-mozcloud": "workspace:^",
+    "@internal/plugin-scaffolder-backend-module-mozcloud": "workspace:^",
     "app": "link:../app",
     "better-sqlite3": "^12.0.0",
     "node-gyp": "^10.0.0",

@@ -6930,6 +6930,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@internal/plugin-scaffolder-backend-module-mozcloud@workspace:^, @internal/plugin-scaffolder-backend-module-mozcloud@workspace:plugins/scaffolder-backend-module-mozcloud":
+  version: 0.0.0-use.local
+  resolution: "@internal/plugin-scaffolder-backend-module-mozcloud@workspace:plugins/scaffolder-backend-module-mozcloud"
+  dependencies:
+    "@backstage/backend-plugin-api": "npm:^1.9.2"
+    "@backstage/cli": "npm:^0.36.2"
+    "@backstage/integration": "npm:^2.0.2"
+    "@backstage/plugin-scaffolder-node": "npm:^0.13.3"
+    "@types/nunjucks": "npm:^3.2.6"
+    nunjucks: "npm:^3.2.4"
+    yaml: "npm:^2.8.0"
+  languageName: unknown
+  linkType: soft
+
 "@internationalized/date@npm:^3.12.0, @internationalized/date@npm:^3.12.2":
   version: 3.12.2
   resolution: "@internationalized/date@npm:3.12.2"
@@ -13775,6 +13789,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/nunjucks@npm:^3.2.6":
+  version: 3.2.6
+  resolution: "@types/nunjucks@npm:3.2.6"
+  checksum: 10c0/bc62c5c9305c0c63a49a55c3553393fdc84d123b4831668212380077ee6646c3ba52bc49e3c651257addf3a47d775707dcefeaf5e1b76cf7f680096939894142
+  languageName: node
+  linkType: hard
+
 "@types/parse-json@npm:^4.0.0":
   version: 4.0.2
   resolution: "@types/parse-json@npm:4.0.2"
@@ -15224,6 +15245,7 @@ __metadata:
     "@backstage/plugin-org": "npm:^0.7.4"
     "@backstage/plugin-permission-react": "npm:^0.5.1"
     "@backstage/plugin-scaffolder": "npm:^1.37.0"
+    "@backstage/plugin-scaffolder-react": "npm:^2.0.0"
     "@backstage/plugin-search": "npm:^1.7.4"
     "@backstage/plugin-search-react": "npm:^1.11.4"
     "@backstage/plugin-techdocs": "npm:^1.17.6"
@@ -15863,6 +15885,7 @@ __metadata:
     "@backstage/plugin-search-backend-node": "npm:^1.4.4"
     "@backstage/plugin-techdocs-backend": "npm:^2.2.0"
     "@internal/plugin-catalog-backend-module-mozcloud": "workspace:^"
+    "@internal/plugin-scaffolder-backend-module-mozcloud": "workspace:^"
     app: "link:../app"
     better-sqlite3: "npm:^12.0.0"
     node-gyp: "npm:^10.0.0"
@@ -27039,7 +27062,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nunjucks@npm:^3.2.3":
+"nunjucks@npm:^3.2.3, nunjucks@npm:^3.2.4":
   version: 3.2.4
   resolution: "nunjucks@npm:3.2.4"
   dependencies:
@@ -35119,6 +35142,15 @@ __metadata:
   bin:
     yaml: bin.mjs
   checksum: 10c0/f6f7310cf7264a8107e72c1376f4de37389945d2fb4656f8060eca83f01d2d703f9d1b925dd8f39852a57034fafefde6225409ddd9f22aebfda16c6141b71858
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.8.0":
+  version: 2.9.0
+  resolution: "yaml@npm:2.9.0"
+  bin:
+    yaml: bin.mjs
+  checksum: 10c0/f340718df45e97a9551b9bf9dac61c80050bc464513b710debfb5067c380c8472e3b67809cffacb4ab5ffb5e66ef9310816c88b05f371cec60abfedd8c88e0a2
   languageName: node
   linkType: hard
 

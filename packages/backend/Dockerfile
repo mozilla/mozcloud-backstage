@@ -17,12 +17,24 @@ FROM node:20-bookworm-slim
 # Set Python interpreter for `node-gyp` to use
 ENV PYTHON=/usr/bin/python3
 
-# Install isolate-vm dependencies, these are needed by the @backstage/plugin-scaffolder-backend.
+# Install isolate-vm dependencies (needed by @backstage/plugin-scaffolder-backend)
+# plus a Python venv used by scaffolder Python tooling (copier, for the
+# `run:copier` action). A venv keeps pip off bookworm's PEP-668 externally-managed
+# system Python; it's appended to PATH so it doesn't shadow /usr/bin/python3.
+# `git` is required at runtime: copier shells out to it to clone the template
+# repo, and the slim base image does not ship it.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends python3 g++ build-essential && \
+    apt-get install -y --no-install-recommends python3 python3-venv git g++ build-essential && \
+    python3 -m venv /opt/pyenv && \
     rm -rf /var/lib/apt/lists/*
+ENV PATH="${PATH}:/opt/pyenv/bin"
+
+# Python tools used by scaffolder actions (copier for run:copier), declared in a
+# version-controlled requirements file so they're pinnable/auditable.
+COPY packages/backend/requirements.txt /tmp/requirements.txt
+RUN /opt/pyenv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Install sqlite3 dependencies. You can skip this if you don't use sqlite3 in the image,
 # in which case you should also move better-sqlite3 to "devDependencies" in package.json.
@@ -62,6 +74,13 @@ RUN --mount=type=cache,target=/home/node/.cache/yarn,sharing=locked,uid=1000,gid
 
 # This will include the examples, if you don't need these simply remove this line
 COPY --chown=node:node examples ./examples
+
+# Bundle scaffolder software templates into the image so they can be discovered
+# via a `catalog.locations` file target at runtime. Note: the container cwd is
+# /app, so the production config must target `scaffolder-templates/*/template.yaml`
+# (NOT the `../../`-prefixed path that app-config.yaml uses for local dev, where
+# the backend runs from packages/backend).
+COPY --chown=node:node scaffolder-templates ./scaffolder-templates
 
 # Then copy the rest of the backend bundle, along with any other files we might want.
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./

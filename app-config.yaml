@@ -231,6 +231,13 @@ auth:
       userEntityRef: user:people/wstuckey
       ownershipEntityRefs:
         - user:people/wstuckey
+    github:
+      dev:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: userIdMatchingUserEntityAnnotation
   experimentalClientIdMetadataDocuments:
     enabled: true
 
@@ -315,14 +322,16 @@ catalog:
     pullRequestBranchName: backstage-integration
 
   rules:
-    - allow: [Component, System, API, Resource, Location, User, Group]
+    - allow: [Component, System, API, Resource, Location, User, Group, Template]
 
-  # locations:
-  #   - type: file
-  #     target: scaffolder-templates/*/template.yaml
-  #     rules:
-  #       - allow:
-  #           - Template
+  locations:
+    # Path is relative to the backend's working directory (packages/backend in
+    # local `yarn start`), matching the stock `../../examples/...` convention.
+    - type: file
+      target: ../../scaffolder-templates/*/template.yaml
+      rules:
+        - allow:
+            - Template
 
 # see https://backstage.io/docs/permissions/getting-started for more on the permission framework
 permission:

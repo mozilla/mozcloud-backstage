@@ -22,12 +22,14 @@ import { appModule } from './overrides/app';
 import { catalogModule } from './overrides/catalog';
 import { homeModule } from './overrides/home';
 import { orgModule } from './overrides/org';
+import { scaffolderModule } from './overrides/scaffolder';
 
 const features: FrontendFeature[] = [
   appModule,
   homeModule,
   catalogModule,
   orgModule,
+  scaffolderModule,
   catalogPlugin,
   catalogGraphPlugin,
   catalogImportPlugin,

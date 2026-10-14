@@ -1,0 +1,30 @@
+# Chart entry authored in the tenant YAML's own schema. The
+# `mozcloud:tenant:add-chart` action renders this with the chart/image names,
+# the application repository, and the tenant's realms (each environment carrying
+# its paved-path image_regex), then merges the result into the canonical tenant
+# file. Because it mirrors the tenant schema, what you see here is what lands in
+# the tenant YAML.
+globals:
+  deployment:
+    charts:
+      {{ chartName }}:
+        application_repository: '{{ applicationRepository }}'
+        images:
+          {{ imageName }}:
+            auto_update: true
+            image_name: image.repository
+            image_tag: image.tag
+realms:
+{% for realm in realms %}
+  {{ realm.name }}:
+    environments:
+{% for env in realm.environments %}
+      - name: {{ env.name }}
+        charts:
+          {{ chartName }}:
+            release_name: {{ chartName }}
+            images:
+              {{ imageName }}:
+                image_regex: '{{ env.imageRegex }}'
+{% endfor %}
+{% endfor %}

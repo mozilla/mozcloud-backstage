@@ -1,0 +1,6 @@
+# Python tooling installed into the backend image's venv (/opt/pyenv) and used
+# by scaffolder actions at runtime. Keep pins conservative.
+#
+# copier: rendered by the `run:copier` action (mozcloud-tenant-skeleton chart
+# mode). The skeleton uses copier's yield/`{@ @}` env-ops, which need copier >= 9.
+copier>=9,<10

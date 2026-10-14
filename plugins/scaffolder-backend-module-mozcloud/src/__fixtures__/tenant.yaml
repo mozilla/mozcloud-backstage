@@ -1,0 +1,26 @@
+globals:
+  app_code: acme
+  function: webservices
+  # keep this comment on round-trip
+  deployment:
+    type: argocd
+    charts:
+      existing:
+        application_repository: mozilla/existing
+realms:
+  nonprod:
+    environments:
+      - name: dev
+        charts:
+          existing:
+            release_name: existing
+      - name: stage
+        charts:
+          existing:
+            release_name: existing
+  prod:
+    environments:
+      - name: prod
+        charts:
+          existing:
+            release_name: existing
