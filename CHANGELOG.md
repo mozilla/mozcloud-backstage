@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.1.6](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.5...v0.1.6) (2026-10-19)
+
+
+### Features
+
+* add DevTools plugin gated to cloud-engineering/admins ([aebc258](https://github.com/mozilla/mozcloud-backstage/commit/aebc2587d81253e6e88b581c8e8b9ab5e429406d))
+* **app:** add DevTools page and admin-gated sidebar entry ([10418ce](https://github.com/mozilla/mozcloud-backstage/commit/10418ce60b795c7ed740ccb9cbbfa01b2bf04c6f))
+* **app:** exclude org-wide admin groups from aggregated member lists ([3f9cdb0](https://github.com/mozilla/mozcloud-backstage/commit/3f9cdb0b609ef3b420254642657fe0d0ae0a5fc0))
+* **app:** pruned workgroup member aggregation (exclude org-admin groups) ([d161d7a](https://github.com/mozilla/mozcloud-backstage/commit/d161d7aa05cebdd2a180e8722f0e252656bdba69))
+* **app:** use pruned members card that hides org-admin groups from other workgroups ([d364c50](https://github.com/mozilla/mozcloud-backstage/commit/d364c50be2c78e9c2fa76a257a7812d262d34a91))
+* **backend:** add DevTools backend plugin ([19a8874](https://github.com/mozilla/mozcloud-backstage/commit/19a88747ebab9032cca263d769de04922c92a371))
+* **backend:** gate DevTools behind cloud-engineering/admin permission policy ([75ab1d8](https://github.com/mozilla/mozcloud-backstage/commit/75ab1d887584002b224137beac8b38e8307fb2b1))
+* **backend:** union GCP-linked workgroup groups into sign-in ownership ([a24515e](https://github.com/mozilla/mozcloud-backstage/commit/a24515eec44b8cd53f7c0739f4376666933b936c))
+* **catalog/auth:** link GCP-IAM workgroup admins to signed-in people for ownership ([97014e5](https://github.com/mozilla/mozcloud-backstage/commit/97014e5b590ab87652ac17867abd07a2093330b3))
+* **mozcloud:** emit user:gcp entities and link them into subgroup members ([37abb51](https://github.com/mozilla/mozcloud-backstage/commit/37abb510eadf3f50210a9b9d5b2db9fd7eb37b5f))
+* **mozcloud:** key People user entities by email local-part ([29f53d5](https://github.com/mozilla/mozcloud-backstage/commit/29f53d50e0a55f74d16628e1ec93d5b795cc10fe))
+* **scaffolder:** add create-tenant-chart software template ([7a91ed0](https://github.com/mozilla/mozcloud-backstage/commit/7a91ed0f4fe38b137d8d375fbcb54d00dcff9126))
+* **scaffolder:** add github:ensureAuth preflight action; centralize token resolution ([88d8d34](https://github.com/mozilla/mozcloud-backstage/commit/88d8d34e79310e7f3b09973e75783882e8a7b386))
+* **scaffolder:** create-tenant-chart template + enable template discovery ([06d7669](https://github.com/mozilla/mozcloud-backstage/commit/06d7669c0660bad917398e927b4519ecc73d93d5))
+* **scaffolder:** include chart name in PR branch (user-tenant-chart) ([f6729b8](https://github.com/mozilla/mozcloud-backstage/commit/f6729b853c7f28a7f62946018764184adc9921ec))
+* **scaffolder:** make GitHub OAuth opt-out for local dev ([4a11897](https://github.com/mozilla/mozcloud-backstage/commit/4a118973312780b586ad3826c799bd2c3bfebdcb))
+* **scaffolder:** mozcloud run:copier action + module registration ([5216d03](https://github.com/mozilla/mozcloud-backstage/commit/5216d038069e9d32f65a091a0187bf63f60ac33d))
+* **scaffolder:** mozcloud tenant add-chart action ([25e32b2](https://github.com/mozilla/mozcloud-backstage/commit/25e32b240b6e68c5858d1e4e2b89315bf06a0657))
+* **scaffolder:** mozcloud tenant read action ([1cadbfa](https://github.com/mozilla/mozcloud-backstage/commit/1cadbfab5ac8d8a6fb77ee0bd2523a70ded95225))
+* **scaffolder:** obtain GitHub token via a form decorator, drop the picker ([5fc2683](https://github.com/mozilla/mozcloud-backstage/commit/5fc2683546353bf41d3d39c35e0957a44cfadaa2))
+* **scaffolder:** user-prefixed PR branches, conventional-commit titles; restore Create nav; drop create-rfc ([c8ccf2b](https://github.com/mozilla/mozcloud-backstage/commit/c8ccf2bfc7a2c142ce57d32895b4e7434321789b))
+
+
+### Bug Fixes
+
+* **app:** ship config.d.ts in package files ([ffb2e9b](https://github.com/mozilla/mozcloud-backstage/commit/ffb2e9bead6ab8db2ff41e97e8e20dadaf8ba974))
+* **app:** ship config.d.ts in package files ([2f63e4c](https://github.com/mozilla/mozcloud-backstage/commit/2f63e4c765df4a05e301f266cdebc3a2c2169339))
+* **backend:** correct DevTools admin group to cloud-engineering-admins (plural) ([6d45015](https://github.com/mozilla/mozcloud-backstage/commit/6d45015ff2fd3aa391f797af8816b15e8ca30da3))
+* **backend:** declare @backstage/plugin-catalog-node & catalog-model deps ([a466e45](https://github.com/mozilla/mozcloud-backstage/commit/a466e4529482975ce9f132dbd7a40bde668197a4))
+* **backend:** gate all DevTools permissions via devToolsPermissions ([2db51af](https://github.com/mozilla/mozcloud-backstage/commit/2db51af239b5d7da75adc460abd79bd5ec7fa161))
+* **backend:** install git in image; redact child loggers in run:copier ([3d99146](https://github.com/mozilla/mozcloud-backstage/commit/3d9914663332473936bf7d4210b852ff3b66276d))
+* **ci:** build & push release image via release-please output ([57c54be](https://github.com/mozilla/mozcloud-backstage/commit/57c54bedd9ae78b022c38b2a6fa2e8b69506f947))
+* **ci:** trigger build-and-push for release-please releases ([0fcbcbb](https://github.com/mozilla/mozcloud-backstage/commit/0fcbcbb39076c9c54e2ac86e22618450e3cf9fbc))
+* **mozcloud:** canonicalize person emails in usersQuery (strip plus-addressing, collapse aliases) ([c29a70a](https://github.com/mozilla/mozcloud-backstage/commit/c29a70a9851911a85133920730f60b487b3bbd52))
+* **mozcloud:** only emit user:gcp for bare gcp-domain emails, not group:/serviceAccount: principals ([ac171f0](https://github.com/mozilla/mozcloud-backstage/commit/ac171f0acb4b4d84665924093a0e2320e8ef3994))
+* **mozcloud:** sanitize email local-part to a valid entity name (plus-addressing) ([8ff09a9](https://github.com/mozilla/mozcloud-backstage/commit/8ff09a9f7a6db8ddc1ce58a4ee857e24314b7dd1))
+* **mozcloud:** source user:gcp entities from sg.users (human members), not sg.members (IAM bindings) ([a01591d](https://github.com/mozilla/mozcloud-backstage/commit/a01591d87c0c29bdf1ea2d708f59125dec871921))
+* **scaffolder:** correct template location glob to resolve from backend cwd ([f6abd67](https://github.com/mozilla/mozcloud-backstage/commit/f6abd672842cd68082a7b7dbbd336d1faee793e2))
+* **scaffolder:** gate GitHub sign-in prompt on a config flag (no local popup) ([167380c](https://github.com/mozilla/mozcloud-backstage/commit/167380c94afa1aad50af5e80d3c00a0fe87a6cc2))
+* **scaffolder:** image_regex follows MozCloud paved-path tagging standard ([917f0f4](https://github.com/mozilla/mozcloud-backstage/commit/917f0f4a78d83ce7ec308fc9e2bd6eec7fb0175b))
+* **scaffolder:** keep token-injected clone URL recognizable to copier as git ([3ffd095](https://github.com/mozilla/mozcloud-backstage/commit/3ffd09546f9e9a45847fcaddc42d61c2d603da39))
+* **scaffolder:** run:copier falls back to integration token + never hangs on auth ([c39f2cc](https://github.com/mozilla/mozcloud-backstage/commit/c39f2cc0683e78b836533ce0b4590ea3790481e4))
+* **scaffolder:** set create-tenant-chart owner to group:workgroups/cloud-engineering ([95021d8](https://github.com/mozilla/mozcloud-backstage/commit/95021d8273c9e1c69baa3edf819751326cb803cb))
+* **scaffolder:** stop leaking the clone token into copier _src_path ([41776d2](https://github.com/mozilla/mozcloud-backstage/commit/41776d2ca675a27145691c52a7cf58cf3f9f9938))
+
 ## [0.1.5](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.4...v0.1.5) (2026-06-26)
 
 
