@@ -30,6 +30,7 @@ import {
   tenantsQuery,
 } from './queries';
 import { tenantOwner } from './transform/refs';
+import { withAgentRunLinks } from './transform/agentRunLinks';
 import { parseOverlay } from './overlay/parseOverlay';
 import { mergeOverlayEntities, TenantScope } from './overlay/mergeOverlay';
 import {
@@ -201,7 +202,8 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
         );
       }
     }
-    return merged;
+    // Engines are declared in overlays, so links come after the merge.
+    return withAgentRunLinks(merged);
   }
 
   /**
