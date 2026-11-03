@@ -203,7 +203,7 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
       }
     }
     // Engines are declared in overlays, so links come after the merge.
-    return withAgentRunLinks(merged);
+    return withAgentRunLinks(merged, this.logger);
   }
 
   /**

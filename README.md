@@ -268,7 +268,10 @@ with `spec.system: <app_code>`):
   error logs. The value is a comma-separated list of engine resource names, using
   the project id:
   `projects/<project id>/locations/<region>/reasoningEngines/<engine id>`.
-  The console checks the visitor's own GCP access when they follow a link.
+  Repeated entries count once; entries in any other form are logged and
+  skipped. Each engine's project is added to `spec.dependsOn`, so it shows
+  once in the "Depends on resources" card. The console checks the visitor's
+  own GCP access when they follow a link.
 
 ### Terminology
 
