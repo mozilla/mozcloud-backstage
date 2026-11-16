@@ -61,6 +61,9 @@ const GlobalsSchema = z
     additional_regions: z.array(z.string()).optional(),
     workgroups: z.array(z.string()).default([]),
     deployment: DeploymentSchema.optional(),
+    // Incident-response fields. Left untyped on purpose: `readIncident` reads
+    // them leaf by leaf, so a bad shape drops one annotation, not the tenant.
+    ops: z.unknown().optional(),
     entitlements: z
       .object({
         enabled: z.boolean().optional(),

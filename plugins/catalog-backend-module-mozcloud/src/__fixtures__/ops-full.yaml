@@ -1,0 +1,16 @@
+globals:
+  version: v1alpha1
+  app_code: opsfull
+  function: webservices
+  risk_level: low
+  workgroups:
+    - opsfull
+  ops:
+    issue_tracker_url: https://example.com/issues/new
+    runbooks_url: https://example.com/runbooks
+    confluence_url: https://example.com/wiki
+    escalation:
+      slack_channel_id: C0123456789
+      pagerduty_service_id: PABC123
+
+realms: {}

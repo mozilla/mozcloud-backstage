@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { load } from 'js-yaml';
+import { mockServices } from '@backstage/backend-test-utils';
+import { Entity } from '@backstage/catalog-model';
 import { TenantRowSchema } from './schema';
 import { tenantToEntities } from './tenantToEntities';
 import { workgroupRef } from './refs';
@@ -139,6 +141,181 @@ describe('tenantToEntities', () => {
         realms: {},
       };
       expect(() => TenantRowSchema.parse(withExtras)).not.toThrow();
+    });
+
+    it('keeps globals.ops on the parsed row, even when malformed', () => {
+      const row = (ops: unknown) =>
+        TenantRowSchema.parse({
+          globals: {
+            app_code: 'opsapp',
+            function: 'webservices',
+            risk_level: 'low',
+            workgroups: ['opsapp'],
+            ops,
+          },
+          realms: {},
+        });
+
+      expect(row({ runbooks_url: 'https://example.com' }).globals.ops).toEqual({
+        runbooks_url: 'https://example.com',
+      });
+      expect(row('not-an-object').globals.ops).toBe('not-an-object');
+    });
+  });
+
+  describe('incident fields (globals.ops)', () => {
+    const INCIDENT_KEYS = [
+      'pagerduty.com/service-id',
+      'mozilla.org/escalation-slack-channel-id',
+      'mozilla.org/runbook',
+      'mozilla.org/confluence-url',
+      'mozilla.org/issue-tracker-url',
+    ];
+    const systemOf = (entities: Entity[]) =>
+      entities.find(e => e.kind === 'System')!;
+    const expectNoIncidentAnnotations = (system: Entity) => {
+      for (const key of INCIDENT_KEYS) {
+        expect(system.metadata.annotations).not.toHaveProperty(key);
+      }
+    };
+    const rowWithOps = (ops: unknown) =>
+      TenantRowSchema.parse({
+        globals: {
+          app_code: 'badops',
+          function: 'webservices',
+          risk_level: 'low',
+          workgroups: ['badops'],
+          ops,
+        },
+        realms: {},
+      });
+
+    it('maps a full ops block to System annotations and links', () => {
+      const system = systemOf(
+        tenantToEntities(loadFixture('ops-full'), FIXTURE_LOCATION),
+      );
+
+      expect(system.metadata.annotations).toMatchObject({
+        'pagerduty.com/service-id': 'PABC123',
+        'mozilla.org/escalation-slack-channel-id': 'C0123456789',
+        'mozilla.org/runbook': 'https://example.com/runbooks',
+        'mozilla.org/confluence-url': 'https://example.com/wiki',
+        'mozilla.org/issue-tracker-url': 'https://example.com/issues/new',
+      });
+      expect(system.metadata.links).toEqual([
+        {
+          url: 'https://example.com/runbooks',
+          title: 'Runbooks',
+          icon: 'docs',
+        },
+        { url: 'https://example.com/wiki', title: 'Confluence', icon: 'docs' },
+        {
+          url: 'https://example.com/issues/new',
+          title: 'Report an issue',
+          icon: 'help',
+        },
+      ]);
+    });
+
+    it('keeps the existing System annotations when ops is set', () => {
+      const system = systemOf(
+        tenantToEntities(loadFixture('ops-full'), FIXTURE_LOCATION),
+      );
+
+      expect(system.metadata.annotations).toMatchObject({
+        'mozilla.org/risk-level': 'low',
+        'mozilla.org/function': 'webservices',
+        'grafana/dashboard-selector': "tags @> 'app_code=opsfull'",
+      });
+    });
+
+    it('maps a PagerDuty-only block to one annotation and no links', () => {
+      const system = systemOf(
+        tenantToEntities(loadFixture('ops-pagerduty'), FIXTURE_LOCATION),
+      );
+
+      expect(system.metadata.annotations).toMatchObject({
+        'pagerduty.com/service-id': 'PXYZ789',
+      });
+      for (const key of INCIDENT_KEYS.filter(
+        k => k !== 'pagerduty.com/service-id',
+      )) {
+        expect(system.metadata.annotations).not.toHaveProperty(key);
+      }
+      expect(system.metadata).not.toHaveProperty('links');
+    });
+
+    it('emits no incident annotations and no links for a tenant without ops', () => {
+      const system = systemOf(
+        tenantToEntities(loadFixture('backstage'), FIXTURE_LOCATION),
+      );
+
+      expectNoIncidentAnnotations(system);
+      expect(system.metadata).not.toHaveProperty('links');
+    });
+
+    it('drops only an invalid leaf and warns with the tenant and field', () => {
+      const log = mockServices.logger.mock();
+      const tenant = rowWithOps({
+        runbooks_url: 'http://insecure.example.com',
+        confluence_url: 'https://example.com/wiki',
+        escalation: {
+          slack_channel_id: '#general',
+          pagerduty_service_id: 'PABC123',
+        },
+      });
+
+      const system = systemOf(tenantToEntities(tenant, FIXTURE_LOCATION, log));
+
+      expect(system.metadata.annotations).not.toHaveProperty(
+        'mozilla.org/runbook',
+      );
+      expect(system.metadata.annotations).not.toHaveProperty(
+        'mozilla.org/escalation-slack-channel-id',
+      );
+      expect(system.metadata.annotations).toMatchObject({
+        'mozilla.org/confluence-url': 'https://example.com/wiki',
+        'pagerduty.com/service-id': 'PABC123',
+      });
+      expect(system.metadata.links).toEqual([
+        { url: 'https://example.com/wiki', title: 'Confluence', icon: 'docs' },
+      ]);
+      expect(log.warn).toHaveBeenCalledTimes(2);
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringMatching(/badops.*ops\.runbooks_url/),
+      );
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringMatching(/badops.*ops\.escalation\.slack_channel_id/),
+      );
+    });
+
+    it.each([
+      ['ops is a string', 'not-an-object'],
+      ['ops is an array', ['https://example.com']],
+      ['ops is a number', 5],
+      ['escalation is a number', { escalation: 5 }],
+      ['runbooks_url is a number', { runbooks_url: 42 }],
+    ])('still emits the System and no incident keys when %s', (_l, ops) => {
+      const log = mockServices.logger.mock();
+
+      const entities = tenantToEntities(rowWithOps(ops), FIXTURE_LOCATION, log);
+      const system = systemOf(entities);
+
+      expect(system.metadata.name).toBe('badops');
+      expect(system.metadata.annotations).toMatchObject({
+        'mozilla.org/risk-level': 'low',
+      });
+      expectNoIncidentAnnotations(system);
+      expect(system.metadata).not.toHaveProperty('links');
+      expect(log.warn).toHaveBeenCalled();
+    });
+
+    it('does not require a logger', () => {
+      const tenant = rowWithOps({
+        runbooks_url: 'http://insecure.example.com',
+      });
+
+      expect(() => tenantToEntities(tenant, FIXTURE_LOCATION)).not.toThrow();
     });
   });
 

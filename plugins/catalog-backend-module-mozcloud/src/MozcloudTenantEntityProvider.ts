@@ -112,7 +112,9 @@ export class MozcloudTenantEntityProvider implements EntityProvider {
     const entities: Entity[] = [];
 
     for (const tenant of tenants) {
-      entities.push(...tenantToEntities(tenant, tenantsLocationRef));
+      entities.push(
+        ...tenantToEntities(tenant, tenantsLocationRef, this.logger),
+      );
     }
 
     for (const chart of charts) {
