@@ -2,9 +2,8 @@ import { EntityLink } from '@backstage/catalog-model';
 
 /** Catalog annotation keys that the tenant's `globals.ops` fields map to. */
 export const INCIDENT_ANNOTATIONS = {
-  pagerdutyServiceId: 'pagerduty.com/service-id',
-  // The escalation channel, not the alerts channel in `mozilla.org/slack-channel`.
-  slackChannelId: 'mozilla.org/escalation-slack-channel-id',
+  escalationPagerdutyServiceId: 'pagerduty.com/service-id',
+  escalationSlackChannelId: 'mozilla.org/escalation-slack-channel-id',
   runbook: 'mozilla.org/runbook',
   confluenceUrl: 'mozilla.org/confluence-url',
   issueTrackerUrl: 'mozilla.org/issue-tracker-url',
@@ -23,8 +22,8 @@ const SLACK_CHANNEL_ID = /^[CG][A-Z0-9]+$/;
 const PAGERDUTY_SERVICE_ID = /^[A-Z0-9]+$/;
 
 const PATTERNS: Record<IncidentAnnotationKey, RegExp> = {
-  [INCIDENT_ANNOTATIONS.pagerdutyServiceId]: PAGERDUTY_SERVICE_ID,
-  [INCIDENT_ANNOTATIONS.slackChannelId]: SLACK_CHANNEL_ID,
+  [INCIDENT_ANNOTATIONS.escalationPagerdutyServiceId]: PAGERDUTY_SERVICE_ID,
+  [INCIDENT_ANNOTATIONS.escalationSlackChannelId]: SLACK_CHANNEL_ID,
   [INCIDENT_ANNOTATIONS.runbook]: HTTPS_URL,
   [INCIDENT_ANNOTATIONS.confluenceUrl]: HTTPS_URL,
   [INCIDENT_ANNOTATIONS.issueTrackerUrl]: HTTPS_URL,
@@ -52,12 +51,12 @@ const FIELDS: IncidentField[] = [
   {
     scope: 'ops.escalation',
     name: 'pagerduty_service_id',
-    annotation: INCIDENT_ANNOTATIONS.pagerdutyServiceId,
+    annotation: INCIDENT_ANNOTATIONS.escalationPagerdutyServiceId,
   },
   {
     scope: 'ops.escalation',
     name: 'slack_channel_id',
-    annotation: INCIDENT_ANNOTATIONS.slackChannelId,
+    annotation: INCIDENT_ANNOTATIONS.escalationSlackChannelId,
   },
   {
     scope: 'ops',

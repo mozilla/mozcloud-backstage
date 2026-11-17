@@ -18,8 +18,8 @@ const FULL_OPS = {
 describe('INCIDENT_ANNOTATIONS', () => {
   it('uses the agreed annotation keys', () => {
     expect(INCIDENT_ANNOTATIONS).toEqual({
-      pagerdutyServiceId: 'pagerduty.com/service-id',
-      slackChannelId: 'mozilla.org/escalation-slack-channel-id',
+      escalationPagerdutyServiceId: 'pagerduty.com/service-id',
+      escalationSlackChannelId: 'mozilla.org/escalation-slack-channel-id',
       runbook: 'mozilla.org/runbook',
       confluenceUrl: 'mozilla.org/confluence-url',
       issueTrackerUrl: 'mozilla.org/issue-tracker-url',
@@ -65,8 +65,8 @@ describe('isValidIncidentValue', () => {
     });
   });
 
-  describe('slackChannelId', () => {
-    const key = INCIDENT_ANNOTATIONS.slackChannelId;
+  describe('escalationSlackChannelId', () => {
+    const key = INCIDENT_ANNOTATIONS.escalationSlackChannelId;
 
     it.each(['C0123456789', 'G0123ABCD'])('accepts %j', value => {
       expect(isValidIncidentValue(key, value)).toBe(true);
@@ -88,8 +88,8 @@ describe('isValidIncidentValue', () => {
     });
   });
 
-  describe('pagerdutyServiceId', () => {
-    const key = INCIDENT_ANNOTATIONS.pagerdutyServiceId;
+  describe('escalationPagerdutyServiceId', () => {
+    const key = INCIDENT_ANNOTATIONS.escalationPagerdutyServiceId;
 
     it.each(['PABC123', '0ABC'])('accepts %j', value => {
       expect(isValidIncidentValue(key, value)).toBe(true);
