@@ -18,6 +18,7 @@ For each tenant row:
 | Source field                                     | Backstage entity | Notes                                                                                                                                                                                                                                                           |
 | ------------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `globals.app_code`                               | `System`         | `spec.owner = group:workgroups/<first_workgroup>`, `spec.domain = function`, tags `[function, risk-<level>]`, annotations for risk/function/cluster_type/slack_channel                                                                                          |
+| `globals.ops`                                    | `System`         | Incident-response fields as annotations and Links-card entries; see below. A malformed field is dropped and logged, never the tenant.                                                                                                                           |
 | `globals.deployment.charts.<name>`               | `Component`      | `spec.system = app_code`, `type = service`, `lifecycle = production`. Single-chart tenants use `app_code` as the component name; multi-chart tenants get `${app_code}-${chart_name}`. `github.com/project-slug` annotation comes from `application_repository`. |
 | `realms.<realm>.project_id`                      | `Resource`       | `spec.type = gcp-project`, annotations record realm + environments                                                                                                                                                                                              |
 | `globals.entitlements.additional_entitlements[]` | `Resource`       | `spec.type = gcp-entitlement`, `dependsOn` resolves principals like `workgroup:fxa/developers` to `group:workgroups/fxa-developers`                                                                                                                             |
@@ -27,6 +28,27 @@ The `workgroups` namespace keeps these Groups from colliding with the
 GitHub Org provider's Groups (`group:default/mozilla-services` and
 friends). User identity stays with the GitHub Org provider; mozilla.com
 emails are not emitted as User entities until v2.
+
+### Incident-response fields
+
+`globals.ops` is optional, and so is every field in it. Each field becomes a
+System annotation, and the URL fields also get an entry on the Links card, in
+this order:
+
+| Field                                 | Annotation                                | Link            |
+| ------------------------------------- | ----------------------------------------- | --------------- |
+| `ops.escalation.pagerduty_service_id` | `pagerduty.com/service-id`                |                 |
+| `ops.escalation.slack_channel_id`     | `mozilla.org/escalation-slack-channel-id` |                 |
+| `ops.runbooks_url`                    | `mozilla.org/runbook`                     | Runbooks        |
+| `ops.confluence_url`                  | `mozilla.org/confluence-url`              | Confluence      |
+| `ops.issue_tracker_url`               | `mozilla.org/issue-tracker-url`           | Report an issue |
+
+A value that is not a string in the format `tenants/schema.json` requires (an
+https URL, a Slack channel ID matching `^[CG][A-Z0-9]+$`, a PagerDuty service
+ID matching `^[A-Z0-9]+$`) is dropped with a warning that names the tenant and
+the field. The rest of the tenant is unaffected. The BigQuery table has no
+`ops` column until a tenant sets a value, so an unset field produces no
+annotation.
 
 ## Configuration
 

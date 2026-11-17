@@ -1,5 +1,7 @@
+import { LoggerService } from '@backstage/backend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { TenantRow } from './schema';
+import { readIncident } from './incident';
 import { pickDefined, tenantOwner, workgroupRef, DEFAULT_WG_REF } from './refs';
 
 const TENANTS_REPO = 'mozilla/global-platform-admin';
@@ -24,15 +26,23 @@ function tenantSourceLocation(appCode: string): string {
  *
  * Workgroup-namespaced Group entities are NOT emitted here — the
  * MozcloudWorkgroupEntityProvider owns that namespace.
+ *
+ * The System also carries the incident-response fields from `globals.ops`
+ * as annotations and Links-card entries. A malformed field is dropped on its
+ * own and reported through `logger`; it never drops the tenant.
  */
 export function tenantToEntities(
   tenant: TenantRow,
   locationRef: string,
+  logger?: LoggerService,
 ): Entity[] {
   const sysName = tenant.globals.app_code;
   const owner = tenantOwner(tenant.globals.workgroups);
   const fn = tenant.globals.function;
   const entities: Entity[] = [];
+  const incident = readIncident(tenant.globals.ops, (path, reason) =>
+    logger?.warn(`tenant ${sysName}: ignoring ${path}: ${reason}`),
+  );
 
   // Default annotations for all entities
   const baseAnn = (extra: Record<string, string | undefined> = {}) =>
@@ -64,6 +74,7 @@ export function tenantToEntities(
         tenant.globals.function,
         `risk-${tenant.globals.risk_level}`,
       ].filter((t): t is string => Boolean(t)),
+      ...(incident.links.length > 0 && { links: incident.links }),
       annotations: baseAnn({
         // Link System pages back to the canonical tenant YAML upstream.
         'backstage.io/source-location': tenantSourceLocation(sysName),
@@ -74,6 +85,7 @@ export function tenantToEntities(
         'mozilla.org/slack-channel': tenant.globals.slack_channel,
         'grafana/dashboard-selector': `tags @> 'app_code=${sysName}'`,
         'grafana/alert-label-selector': `app_code=${sysName}`,
+        ...incident.annotations,
       }),
     },
     spec: { owner, domain: tenant.globals.function },

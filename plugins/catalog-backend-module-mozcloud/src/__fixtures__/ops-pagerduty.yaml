@@ -1,0 +1,13 @@
+globals:
+  version: v1alpha1
+  app_code: opspagerduty
+  function: dataservices
+  risk_level: high
+  extra_attributes: {}
+  workgroups:
+    - opspagerduty
+  ops:
+    escalation:
+      pagerduty_service_id: PXYZ789
+
+realms: {}
