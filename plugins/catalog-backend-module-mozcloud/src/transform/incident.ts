@@ -39,7 +39,7 @@ export function isValidIncidentValue(
 
 interface IncidentField {
   /** Where the field sits: directly under `ops`, or under `ops.escalation`. */
-  scope: 'ops' | 'escalation';
+  scope: 'ops' | 'ops.escalation';
   name: string;
   annotation: IncidentAnnotationKey;
   /** Set for URL fields, which also get an entry on the Links card. */
@@ -49,12 +49,12 @@ interface IncidentField {
 // Listed in link order: links are emitted in the order of this table.
 const FIELDS: IncidentField[] = [
   {
-    scope: 'escalation',
+    scope: 'ops.escalation',
     name: 'pagerduty_service_id',
     annotation: INCIDENT_ANNOTATIONS.pagerdutyServiceId,
   },
   {
-    scope: 'escalation',
+    scope: 'ops.escalation',
     name: 'slack_channel_id',
     annotation: INCIDENT_ANNOTATIONS.escalationSlackChannelId,
   },
@@ -115,14 +115,15 @@ export function readIncident(
     }
   }
 
+  const containers = { ops, 'ops.escalation': escalation };
+
   for (const { scope, name, annotation, link } of FIELDS) {
-    const value = (scope === 'ops' ? ops : escalation)?.[name];
+    const value = containers[scope]?.[name];
     if (value === undefined || value === null) continue;
 
     if (!isValidIncidentValue(annotation, value)) {
-      const path = scope === 'ops' ? `ops.${name}` : `ops.escalation.${name}`;
       onProblem(
-        path,
+        `${scope}.${name}`,
         typeof value === 'string'
           ? 'does not match the expected format'
           : 'expected a string',
