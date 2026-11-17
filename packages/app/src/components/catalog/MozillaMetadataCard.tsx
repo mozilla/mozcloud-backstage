@@ -77,7 +77,7 @@ export const MozillaMetadataCard = () => {
         {slack && (
           <Grid item xs={6}>
             <Typography className={classes.label}>
-              Alerts Slack Channel
+              Slack Alerts Channel
             </Typography>
             <Typography variant="body2">#{slack}</Typography>
           </Grid>
