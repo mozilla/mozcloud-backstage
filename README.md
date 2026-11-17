@@ -261,6 +261,14 @@ with `spec.system: <app_code>`):
   come from the generated entity, annotations are merged by key, tags and
   links are unioned, and other `metadata` and `spec` fields take the
   overlay's value.
+- The incident annotations (`pagerduty.com/service-id`,
+  `mozilla.org/escalation-slack-channel-id`, `mozilla.org/runbook`,
+  `mozilla.org/confluence-url`, `mozilla.org/issue-tracker-url`) are the
+  exception: a value the tenant sets in `globals.ops` wins. A different value
+  in an overlay is ignored with a warning, along with any overlay link to it.
+  An overlay can still set one the tenant leaves unset. A value that is not in
+  the format `tenants/schema.json` requires is dropped with a warning, on any
+  entity.
 - New documents (for example an `API`) are added to the tenant's System and
   get the tenant owner if they don't set one.
 - An entity that sets `mozilla.org/agent-platform-engines` gets links to

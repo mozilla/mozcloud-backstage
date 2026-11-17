@@ -43,6 +43,20 @@ const TENANT_B: TenantRow = {
   realms: {},
 };
 
+const TENANT_OPS: TenantRow = {
+  globals: {
+    app_code: 'service-ops',
+    function: 'webservices',
+    risk_level: 'low',
+    workgroups: ['team-x'],
+    ops: {
+      runbooks_url: 'https://tenant.example.com/runbooks',
+      escalation: { pagerduty_service_id: 'PTENANT1' },
+    },
+  },
+  realms: {},
+};
+
 class FakeSource<T> implements Source<T> {
   constructor(
     public readonly description: string,
@@ -183,6 +197,142 @@ spec:
     expect(newApi).toBeDefined();
     expect((newApi.spec as any).system).toBe('service-a');
     expect((newApi.spec as any).owner).toBe('group:workgroups/team-x');
+  });
+
+  it('puts tenant ops values on the System when overlays are off', async () => {
+    const captured: EntityProviderMutation[] = [];
+    const connection: EntityProviderConnection = {
+      applyMutation: async m => {
+        captured.push(m);
+      },
+      refresh: async () => {},
+    };
+
+    const provider = new MozcloudTenantEntityProvider(
+      new FakeSource<TenantRow>('fake-tenants:in-memory', [TENANT_OPS]),
+      new FakeSource<ChartDeploymentsRow>('fake-charts:in-memory', []),
+      mockServices.logger.mock(),
+      new ImmediateTaskRunner(),
+    );
+
+    await provider.connect(connection);
+
+    if (captured[0].type !== 'full') throw new Error('unreachable');
+    const system = captured[0].entities
+      .map(e => e.entity)
+      .find(e => e.kind === 'System' && e.metadata.name === 'service-ops')!;
+    expect(system.metadata.annotations).toMatchObject({
+      'mozilla.org/runbook': 'https://tenant.example.com/runbooks',
+      'pagerduty.com/service-id': 'PTENANT1',
+    });
+    expect(system.metadata.links).toEqual([
+      {
+        url: 'https://tenant.example.com/runbooks',
+        title: 'Runbooks',
+        icon: 'docs',
+      },
+    ]);
+  });
+
+  it('lets tenant ops values win over an overlay and drops invalid overlay values', async () => {
+    const overlayYaml = `
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: service-ops
+  annotations:
+    mozilla.org/runbook: https://overlay.example.com/runbooks
+    mozilla.org/confluence-url: https://overlay.example.com/wiki
+    mozilla.org/escalation-slack-channel-id: '#general'
+  links:
+    - url: https://overlay.example.com/runbooks
+      title: Old runbook
+    - url: https://other.example.com
+      title: Other
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: service-ops-web
+  annotations:
+    mozilla.org/runbook: https://overlay.example.com/web-runbook
+    pagerduty.com/service-id: not a service id
+spec:
+  type: service
+  lifecycle: production
+`;
+    const reader = {
+      readUrl: async () => ({ buffer: async () => Buffer.from(overlayYaml) }),
+    } as unknown as UrlReaderService;
+    const overlay: OverlayConfig = {
+      enabled: true,
+      repoUrlTemplate: 'https://github.com/mozilla/{function}-infra',
+      pathTemplate: '{app_code}/catalog-info.yaml',
+      branch: 'main',
+    };
+    const logger = mockServices.logger.mock();
+
+    const captured: EntityProviderMutation[] = [];
+    const connection: EntityProviderConnection = {
+      applyMutation: async m => {
+        captured.push(m);
+      },
+      refresh: async () => {},
+    };
+
+    const provider = new MozcloudTenantEntityProvider(
+      new FakeSource<TenantRow>('fake-tenants:in-memory', [TENANT_OPS]),
+      new FakeSource<ChartDeploymentsRow>('fake-charts:in-memory', []),
+      logger,
+      new ImmediateTaskRunner(),
+      reader,
+      overlay,
+    );
+
+    await provider.connect(connection);
+
+    if (captured[0].type !== 'full') throw new Error('unreachable');
+    const entities = captured[0].entities.map(e => e.entity);
+    const system = entities.find(
+      e => e.kind === 'System' && e.metadata.name === 'service-ops',
+    )!;
+    const component = entities.find(
+      e => e.kind === 'Component' && e.metadata.name === 'service-ops-web',
+    )!;
+
+    // The tenant wins over the conflicting overlay runbook, an overlay value
+    // for a key the tenant leaves unset is kept, and an invalid one is dropped.
+    expect(system.metadata.annotations).toMatchObject({
+      'mozilla.org/runbook': 'https://tenant.example.com/runbooks',
+      'pagerduty.com/service-id': 'PTENANT1',
+      'mozilla.org/confluence-url': 'https://overlay.example.com/wiki',
+    });
+    expect(system.metadata.annotations).not.toHaveProperty(
+      'mozilla.org/escalation-slack-channel-id',
+    );
+    expect(system.metadata.links?.map(l => l.title)).toEqual([
+      'Runbooks',
+      'Other',
+    ]);
+
+    // A Component's own overlay runbook is untouched; its invalid value is not.
+    expect(component.metadata.annotations).toMatchObject({
+      'mozilla.org/runbook': 'https://overlay.example.com/web-runbook',
+    });
+    expect(component.metadata.annotations).not.toHaveProperty(
+      'pagerduty.com/service-id',
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'mozilla.org/runbook on system:default/service-ops',
+      ),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'pagerduty.com/service-id on component:default/service-ops-web',
+      ),
+    );
   });
 
   it('handles an empty source gracefully', async () => {
