@@ -3,6 +3,7 @@ globals:
   app_code: opsfull
   function: webservices
   risk_level: low
+  extra_attributes: {}
   workgroups:
     - opsfull
   ops:

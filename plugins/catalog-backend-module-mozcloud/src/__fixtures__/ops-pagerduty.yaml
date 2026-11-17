@@ -3,6 +3,7 @@ globals:
   app_code: opspagerduty
   function: dataservices
   risk_level: high
+  extra_attributes: {}
   workgroups:
     - opspagerduty
   ops:
