@@ -37,6 +37,13 @@ export function isValidIncidentValue(
   return typeof value === 'string' && PATTERNS[key].test(value);
 }
 
+/** Why `value` failed {@link isValidIncidentValue}. */
+export function invalidIncidentReason(value: unknown): string {
+  return typeof value === 'string'
+    ? 'does not match the expected format'
+    : 'expected a string';
+}
+
 interface IncidentField {
   /** Where the field sits: directly under `ops`, or under `ops.escalation`. */
   scope: 'ops' | 'ops.escalation';
@@ -77,6 +84,11 @@ const FIELDS: IncidentField[] = [
     link: { title: 'Report an issue', icon: 'help' },
   },
 ];
+
+/** The annotations whose value is also shown as a link on the Links card. */
+export const INCIDENT_LINK_KEYS = FIELDS.filter(f => f.link).map(
+  f => f.annotation,
+);
 
 export interface Incident {
   annotations: Partial<Record<IncidentAnnotationKey, string>>;
@@ -122,12 +134,7 @@ export function readIncident(
     if (value === undefined || value === null) continue;
 
     if (!isValidIncidentValue(annotation, value)) {
-      onProblem(
-        `${scope}.${name}`,
-        typeof value === 'string'
-          ? 'does not match the expected format'
-          : 'expected a string',
-      );
+      onProblem(`${scope}.${name}`, invalidIncidentReason(value));
       continue;
     }
 
