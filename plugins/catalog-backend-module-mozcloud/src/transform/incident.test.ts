@@ -1,6 +1,7 @@
 import {
   INCIDENT_ANNOTATIONS,
   INCIDENT_ANNOTATION_KEYS,
+  INCIDENT_LINK_KEYS,
   isValidIncidentValue,
   readIncident,
 } from './incident';
@@ -30,6 +31,16 @@ describe('INCIDENT_ANNOTATIONS', () => {
     expect([...INCIDENT_ANNOTATION_KEYS].sort()).toEqual(
       Object.values(INCIDENT_ANNOTATIONS).sort(),
     );
+  });
+});
+
+describe('INCIDENT_LINK_KEYS', () => {
+  it('lists the annotations whose value is also shown as a link', () => {
+    expect(INCIDENT_LINK_KEYS).toEqual([
+      INCIDENT_ANNOTATIONS.runbook,
+      INCIDENT_ANNOTATIONS.confluenceUrl,
+      INCIDENT_ANNOTATIONS.issueTrackerUrl,
+    ]);
   });
 });
 

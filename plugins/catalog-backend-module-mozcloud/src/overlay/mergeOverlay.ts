@@ -2,6 +2,7 @@ import { LoggerService } from '@backstage/backend-plugin-api';
 import { Entity, EntityLink } from '@backstage/catalog-model';
 import {
   INCIDENT_ANNOTATION_KEYS,
+  INCIDENT_LINK_KEYS,
   IncidentAnnotationKey,
   invalidIncidentReason,
   isValidIncidentValue,
@@ -104,6 +105,21 @@ function tenantIncidentByRef(entities: Entity[]): Map<string, TenantIncident> {
   return out;
 }
 
+/** `entity` without the links to `urls`, except the ones in `keep`. */
+function withoutLinks(
+  entity: Entity,
+  urls: Set<unknown>,
+  keep: Set<string> = new Set(),
+): Entity {
+  const isStale = (l: EntityLink) => urls.has(l.url) && !keep.has(l.url);
+  const links = entity.metadata.links;
+  if (!links?.some(isStale)) return entity;
+  return {
+    ...entity,
+    metadata: { ...entity.metadata, links: links.filter(l => !isStale(l)) },
+  };
+}
+
 /**
  * Merge an overlay document onto a generated entity. Identity fields
  * (`kind`, `metadata.name`, `metadata.namespace`, `apiVersion`) are taken
@@ -113,20 +129,17 @@ function tenantIncidentByRef(entities: Entity[]): Map<string, TenantIncident> {
  * and all of `spec` follow last-writer-wins with overlay winning.
  *
  * The exception is an incident annotation the tenant sets (`tenant`): the
- * overlay can't change it. `onTenantWins` is told about each one refused,
- * and overlay links to a refused value are dropped, or the Links card would
- * show two targets for one thing.
+ * overlay can't change it. `onTenantWins` is told about each one refused.
  */
 function mergeEntity(
   base: Entity,
   overlay: Entity,
   tenant: TenantIncident,
-  onTenantWins: (key: IncidentAnnotationKey) => void,
+  onTenantWins: (key: IncidentAnnotationKey, value: unknown) => void,
 ): Entity {
   const out: Entity = JSON.parse(JSON.stringify(base));
   const oMeta = (overlay.metadata ?? {}) as Record<string, unknown>;
 
-  const refused = new Set<unknown>();
   const oAnnotations = isPlainObject(oMeta.annotations)
     ? Object.fromEntries(
         Object.entries(oMeta.annotations).filter(([key, value]) => {
@@ -137,8 +150,7 @@ function mergeEntity(
           ) {
             return true;
           }
-          refused.add(value);
-          onTenantWins(key);
+          onTenantWins(key, value);
           return false;
         }),
       )
@@ -156,7 +168,7 @@ function mergeEntity(
     } else if (k === 'links' && Array.isArray(v)) {
       out.metadata.links = unionLinks(
         out.metadata.links ?? [],
-        (v as EntityLink[]).filter(l => !refused.has(l.url)),
+        v as EntityLink[],
       );
     } else {
       (out.metadata as Record<string, unknown>)[k] = v;
@@ -204,6 +216,7 @@ export function mergeOverlayEntities(
   const indexByRef = new Map<string, number>();
   out.forEach((e, i) => indexByRef.set(entityRef(e), i));
   const tenantIncident = tenantIncidentByRef(generated);
+  const refusedUrls = new Map<string, Set<unknown>>();
 
   for (const doc of overlay) {
     const ref = entityRef(doc);
@@ -219,10 +232,17 @@ export function mergeOverlayEntities(
         out[idx],
         doc,
         tenantIncident.get(ref) ?? {},
-        key =>
+        (key, value) => {
           logger.warn(
             `overlay ${scope.appCode}: ignoring ${key} on ${ref} — the tenant sets it`,
-          ),
+          );
+          if (INCIDENT_LINK_KEYS.includes(key)) {
+            refusedUrls.set(
+              ref,
+              (refusedUrls.get(ref) ?? new Set()).add(value),
+            );
+          }
+        },
       );
     } else {
       const stamped = stampNewEntity(doc, scope);
@@ -230,14 +250,24 @@ export function mergeOverlayEntities(
       out.push(stamped);
     }
   }
+
+  // An overlay link to a refused URL goes too, or the Links card would show
+  // two targets for one thing. This waits until every document is in, so it
+  // doesn't matter which one carries the link. The tenant's own links stay.
+  for (const [ref, urls] of refusedUrls) {
+    const idx = indexByRef.get(ref)!;
+    const tenantLinks = (generated[idx].metadata.links ?? []).map(l => l.url);
+    out[idx] = withoutLinks(out[idx], urls, new Set(tenantLinks));
+  }
   return out;
 }
 
 /**
  * Drop incident annotations whose value is not in the format the tenant
- * schema requires (see `isValidIncidentValue`), warning for each. Tenant
- * values are checked as they are read, so this catches what overlays added,
- * on any entity. Returns a new array; inputs are not mutated.
+ * schema requires (see `isValidIncidentValue`), warning for each, and the
+ * links to a dropped URL, so the value can't still be followed from the Links
+ * card. Tenant values are checked as they are read, so this catches what
+ * overlays added, on any entity. Returns a new array; inputs are not mutated.
  */
 export function dropInvalidIncidentAnnotations(
   entities: Entity[],
@@ -248,6 +278,7 @@ export function dropInvalidIncidentAnnotations(
     if (!annotations) return entity;
 
     const kept: Record<string, string> = {};
+    const droppedUrls = new Set<unknown>();
     let dropped = false;
     for (const [key, value] of Object.entries(annotations)) {
       if (isIncidentKey(key) && !isValidIncidentValue(key, value)) {
@@ -256,13 +287,17 @@ export function dropInvalidIncidentAnnotations(
             entity,
           )}: ${invalidIncidentReason(value)}`,
         );
+        if (INCIDENT_LINK_KEYS.includes(key)) droppedUrls.add(value);
         dropped = true;
       } else {
         kept[key] = value;
       }
     }
     return dropped
-      ? { ...entity, metadata: { ...entity.metadata, annotations: kept } }
+      ? withoutLinks(
+          { ...entity, metadata: { ...entity.metadata, annotations: kept } },
+          droppedUrls,
+        )
       : entity;
   });
 }

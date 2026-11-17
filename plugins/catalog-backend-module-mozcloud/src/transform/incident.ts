@@ -85,6 +85,11 @@ const FIELDS: IncidentField[] = [
   },
 ];
 
+/** The annotations whose value is also shown as a link on the Links card. */
+export const INCIDENT_LINK_KEYS = FIELDS.filter(f => f.link).map(
+  f => f.annotation,
+);
+
 export interface Incident {
   annotations: Partial<Record<IncidentAnnotationKey, string>>;
   links: EntityLink[];

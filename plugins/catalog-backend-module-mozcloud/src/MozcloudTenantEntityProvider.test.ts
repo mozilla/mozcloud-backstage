@@ -256,7 +256,13 @@ metadata:
   name: service-ops-web
   annotations:
     mozilla.org/runbook: https://overlay.example.com/web-runbook
+    mozilla.org/issue-tracker-url: http://insecure.example.com/issues
     pagerduty.com/service-id: not a service id
+  links:
+    - url: http://insecure.example.com/issues
+      title: Issues
+    - url: https://other.example.com/web
+      title: Web
 spec:
   type: service
   lifecycle: production
@@ -322,6 +328,11 @@ spec:
     expect(component.metadata.annotations).not.toHaveProperty(
       'pagerduty.com/service-id',
     );
+    // An invalid URL loses its annotation and its link, so it can't be clicked.
+    expect(component.metadata.annotations).not.toHaveProperty(
+      'mozilla.org/issue-tracker-url',
+    );
+    expect(component.metadata.links?.map(l => l.title)).toEqual(['Web']);
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining(

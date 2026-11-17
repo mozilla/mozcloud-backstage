@@ -268,7 +268,7 @@ with `spec.system: <app_code>`):
   in an overlay is ignored with a warning, along with any overlay link to it.
   An overlay can still set one the tenant leaves unset. A value that is not in
   the format `tenants/schema.json` requires is dropped with a warning, on any
-  entity.
+  entity, along with any link to it.
 - New documents (for example an `API`) are added to the tenant's System and
   get the tenant owner if they don't set one.
 - An entity that sets `mozilla.org/agent-platform-engines` gets links to

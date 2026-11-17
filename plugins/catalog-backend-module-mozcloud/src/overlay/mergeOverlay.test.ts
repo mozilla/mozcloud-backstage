@@ -323,6 +323,80 @@ describe('mergeOverlayEntities', () => {
       ]);
     });
 
+    it.each([
+      ['an earlier document', true],
+      ['a later document', false],
+    ])(
+      'drops the overlay link to a refused value when %s carries the link',
+      (_label, linkFirst) => {
+        const annotationDoc = overlaySystem({
+          annotations: { [RUNBOOK]: OVERLAY_RUNBOOK },
+        });
+        const linkDoc = overlaySystem({
+          links: [{ url: OVERLAY_RUNBOOK, title: 'Merino runbook' }],
+        });
+
+        const out = mergeOverlayEntities(
+          generatedWithIncident({ [RUNBOOK]: TENANT_RUNBOOK }, [
+            { url: TENANT_RUNBOOK, title: 'Runbooks', icon: 'docs' },
+          ]),
+          linkFirst ? [linkDoc, annotationDoc] : [annotationDoc, linkDoc],
+          scope,
+          logger(),
+        );
+
+        expect(merinoSystem(out).metadata.links).toEqual([
+          { url: 'https://a', title: 'A' },
+          { url: TENANT_RUNBOOK, title: 'Runbooks', icon: 'docs' },
+        ]);
+      },
+    );
+
+    it('keeps a tenant link even when its URL matches a refused overlay value', () => {
+      const WIKI = 'https://tenant.example.com/wiki';
+
+      const out = mergeOverlayEntities(
+        generatedWithIncident(
+          {
+            [RUNBOOK]: TENANT_RUNBOOK,
+            [INCIDENT_ANNOTATIONS.confluenceUrl]: WIKI,
+          },
+          [{ url: WIKI, title: 'Confluence', icon: 'docs' }],
+        ),
+        [overlaySystem({ annotations: { [RUNBOOK]: WIKI } })],
+        scope,
+        logger(),
+      );
+
+      expect(merinoSystem(out).metadata.links).toContainEqual({
+        url: WIKI,
+        title: 'Confluence',
+        icon: 'docs',
+      });
+    });
+
+    it('leaves a link alone when the refused value belongs to a key that has no link', () => {
+      const PAGERDUTY = INCIDENT_ANNOTATIONS.escalationPagerdutyServiceId;
+      const url = 'https://pagerduty.example.com/services/PABC';
+
+      const out = mergeOverlayEntities(
+        generatedWithIncident({ [PAGERDUTY]: 'PTENANT1' }),
+        [
+          overlaySystem({
+            annotations: { [PAGERDUTY]: url },
+            links: [{ url, title: 'PagerDuty' }],
+          }),
+        ],
+        scope,
+        logger(),
+      );
+
+      expect(merinoSystem(out).metadata.links).toContainEqual({
+        url,
+        title: 'PagerDuty',
+      });
+    });
+
     it('leaves a Component runbook alone when only the System has a tenant value', () => {
       const component = {
         apiVersion: 'backstage.io/v1alpha1',
@@ -373,11 +447,12 @@ describe('dropInvalidIncidentAnnotations', () => {
     kind: string,
     name: string,
     annotations: Record<string, unknown>,
+    links?: EntityLink[],
   ): Entity =>
     ({
       apiVersion: 'backstage.io/v1alpha1',
       kind,
-      metadata: { name, annotations },
+      metadata: { name, annotations, ...(links && { links }) },
     } as Entity);
 
   it('drops an invalid value on any kind of entity and warns with its ref and key', () => {
@@ -444,6 +519,48 @@ describe('dropInvalidIncidentAnnotations', () => {
     });
     expect(input[0].metadata.annotations).toEqual(annotations);
     expect(log.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops the link that points at a dropped value and keeps the others', () => {
+    const insecure = 'http://insecure.example.com';
+    const links = [
+      { url: insecure, title: 'Runbook' },
+      { url: 'https://ok.example.com', title: 'OK' },
+    ];
+    const input = [
+      entity(
+        'System',
+        'merino',
+        { [INCIDENT_ANNOTATIONS.runbook]: insecure },
+        links,
+      ),
+    ];
+
+    const [out] = dropInvalidIncidentAnnotations(input, logger());
+
+    expect(out.metadata.links).toEqual([
+      { url: 'https://ok.example.com', title: 'OK' },
+    ]);
+    expect(input[0].metadata.links).toEqual(links);
+  });
+
+  it('leaves a link alone when the dropped value belongs to a key that has no link', () => {
+    const url = 'https://example.com/x';
+
+    const [out] = dropInvalidIncidentAnnotations(
+      [
+        entity(
+          'System',
+          'merino',
+          { [INCIDENT_ANNOTATIONS.escalationSlackChannelId]: url },
+          [{ url, title: 'X' }],
+        ),
+      ],
+      logger(),
+    );
+
+    expect(out.metadata.annotations).toEqual({});
+    expect(out.metadata.links).toEqual([{ url, title: 'X' }]);
   });
 
   it('does not warn when every value is valid', () => {
