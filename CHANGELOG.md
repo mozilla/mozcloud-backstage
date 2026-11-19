@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.7](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.6...v0.1.7) (2026-11-17)
+
+
+### Features
+
+* **catalog:** let tenant ops values win over overlays and validate overlay values ([04c1e10](https://github.com/mozilla/mozcloud-backstage/commit/04c1e10c9f76059da10fd0dbc251cf94b763c646))
+* **catalog:** let tenant ops values win over overlays and validate overlay values ([8ad92fe](https://github.com/mozilla/mozcloud-backstage/commit/8ad92fe1bfcde1a632c10096196c591b8c05292c))
+
+
+### Bug Fixes
+
+* **catalog:** drop overlay links to refused or invalid incident values ([06e9da0](https://github.com/mozilla/mozcloud-backstage/commit/06e9da0638b75dfc55d5c57ca8b83f02753c9f05))
+
 ## [0.1.6](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.5...v0.1.6) (2026-11-17)
 
 
