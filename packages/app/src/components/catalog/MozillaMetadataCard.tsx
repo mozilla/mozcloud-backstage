@@ -47,7 +47,6 @@ export const MozillaMetadataCard = () => {
   const clusterType = ann['mozilla.org/cluster-type'];
   const riskUuid = ann['mozilla.org/risk-uuid'];
   const tickets = splitCsv(ann['mozilla.org/tickets']);
-  const sponsor = ann['mozilla.org/sponsor'];
 
   return (
     <InfoCard title="Mozilla">
@@ -80,12 +79,6 @@ export const MozillaMetadataCard = () => {
               Slack Alerts Channel
             </Typography>
             <Typography variant="body2">#{slack}</Typography>
-          </Grid>
-        )}
-        {sponsor && (
-          <Grid item xs={12}>
-            <Typography className={classes.label}>Sponsor</Typography>
-            <Link to={`mailto:${sponsor}`}>{sponsor}</Link>
           </Grid>
         )}
         {tickets.length > 0 && (
