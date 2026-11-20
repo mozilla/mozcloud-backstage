@@ -45,6 +45,12 @@ app:
         config:
           type: info
 
+    # Listed right after Links so responders see it before the has-* tables;
+    # cards render in the order they are listed here.
+    - entity-card:catalog/incident-response:
+        config:
+          type: info
+
     - entity-card:catalog/gcp-project:
         config:
           type: content
