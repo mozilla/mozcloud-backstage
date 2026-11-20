@@ -5,6 +5,20 @@ import {
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { entityOverviewLayoutExtension } from '../components/catalog/EntityOverviewLayout';
 
+const incidentResponseCard = EntityCardBlueprint.make({
+  name: 'incident-response',
+  params: {
+    filter: { kind: 'system' },
+    type: 'info',
+    loader: async () => {
+      const { IncidentResponseCard } = await import(
+        '../components/catalog/IncidentResponseCard'
+      );
+      return <IncidentResponseCard />;
+    },
+  },
+});
+
 const mozillaMetadataCard = EntityCardBlueprint.make({
   name: 'mozilla-metadata',
   params: {
@@ -79,7 +93,8 @@ const diagramContent = EntityContentBlueprint.make({
 
 /**
  * Overrides for the catalog plugin. Adds Mozilla-specific cards (System
- * metadata, GCP project info, chart/deployment details) on Overview, and
+ * metadata, incident response, GCP project info, chart/deployment details)
+ * on Overview, and
  * registers a dedicated Diagram tab for the relations graph.
  *
  * The default catalog-graph card on Overview is disabled via
@@ -96,6 +111,7 @@ export const catalogModule = createFrontendModule({
   pluginId: 'catalog',
   extensions: [
     entityOverviewLayoutExtension,
+    incidentResponseCard,
     mozillaMetadataCard,
     gcpProjectCard,
     chartCard,
