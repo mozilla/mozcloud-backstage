@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.8](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.7...v0.1.8) (2026-11-20)
+
+
+### Features
+
+* **app:** add incident response card to System pages ([d587c67](https://github.com/mozilla/mozcloud-backstage/commit/d587c67d2d630f1e4071c8d66b243930acd8b9da))
+* **app:** add incident response card to System pages ([614434b](https://github.com/mozilla/mozcloud-backstage/commit/614434bbdaff8bc1c8b6927e6823c3cc6722cabc))
+
+
+### Bug Fixes
+
+* **app:** drop the dead Sponsor row from the Mozilla metadata card ([99411ca](https://github.com/mozilla/mozcloud-backstage/commit/99411cac73a5ec05c259b949a79c93cbc3e93ded))
+* **app:** show the incident response card above the has-* cards ([4b47232](https://github.com/mozilla/mozcloud-backstage/commit/4b47232428b4b5030180768fb6f5ff3f7b69469b))
+* **app:** show the incident response card above the has-* cards ([ace004e](https://github.com/mozilla/mozcloud-backstage/commit/ace004ef3cb2f635f3e045a7e2d9594a8e49d971))
+
 ## [0.1.7](https://github.com/mozilla/mozcloud-backstage/compare/v0.1.6...v0.1.7) (2026-11-17)
 
 
